@@ -10,20 +10,32 @@ import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.text.InputType
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
+import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
+import java.time.Instant
 
 class MainActivity : Activity() {
 
     private lateinit var statusText: TextView
+    private lateinit var acessoText: TextView
+    private lateinit var emailInput: EditText
     private lateinit var switchBusca: Switch
     private lateinit var btn3Dias: Button
     private lateinit var btn7Dias: Button
@@ -32,12 +44,7 @@ class MainActivity : Activity() {
         getSharedPreferences("bot_config", Context.MODE_PRIVATE)
     }
 
-    /*
-     * LINKS REAIS DO MERCADO PAGO.
-     * Corrigido: mensal e trimestral invertidos.
-     */
-    private val linkMensal = "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=ca92e94590464e44b834d5bb61454732"
-    private val linkTrimestral = "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=9786832ee8224e78b048956df6963dc2"
+    private val backendUrl = "https://vaga-facil-backend.onrender.com"
 
     private val amarelo99 = Color.parseColor("#FFD400")
     private val amareloEscuro = Color.parseColor("#FFB800")
@@ -45,6 +52,7 @@ class MainActivity : Activity() {
     private val cinzaTexto = Color.parseColor("#5F5F5F")
     private val fundoApp = Color.parseColor("#F5F5F5")
     private val verdeDesconto = Color.parseColor("#0A8F38")
+    private val vermelhoErro = Color.parseColor("#C62828")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,6 +79,8 @@ class MainActivity : Activity() {
         root.addView(criarTopo())
         root.addView(espaco(14))
         root.addView(criarCardStatus())
+        root.addView(espaco(14))
+        root.addView(criarCardAtivacao())
         root.addView(espaco(14))
         root.addView(criarCardDias())
         root.addView(espaco(14))
@@ -122,7 +132,7 @@ class MainActivity : Activity() {
         }
 
         val desc = TextView(this).apply {
-            text = "Monitore horários e pegue vaga quando o botão disponível aparecer."
+            text = "Assine, ative seu acesso e use a busca automática para monitorar horários disponíveis."
             textSize = 15f
             setTextColor(Color.parseColor("#2A2A2A"))
             setLineSpacing(dp(3).toFloat(), 1.0f)
@@ -153,6 +163,63 @@ class MainActivity : Activity() {
         return card
     }
 
+    private fun criarCardAtivacao(): View {
+        val card = criarCardBase()
+
+        val titulo = criarTitulo("Ativação do acesso")
+
+        val desc = TextView(this).apply {
+            text = "Digite o e-mail usado no pagamento. Depois de pagar, volte aqui e toque em Verificar pagamento."
+            textSize = 14f
+            setTextColor(cinzaTexto)
+            setPadding(0, dp(6), 0, dp(12))
+            setLineSpacing(dp(3).toFloat(), 1.0f)
+        }
+
+        emailInput = EditText(this).apply {
+            hint = "seuemail@gmail.com"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+            textSize = 16f
+            setSingleLine(true)
+            setTextColor(preto99)
+            setHintTextColor(Color.parseColor("#999999"))
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            setText(prefs.getString("user_email", "") ?: "")
+            background = GradientDrawable().apply {
+                cornerRadius = dp(14).toFloat()
+                setColor(Color.parseColor("#F7F7F7"))
+                setStroke(dp(1), Color.parseColor("#DDDDDD"))
+            }
+        }
+
+        acessoText = TextView(this).apply {
+            textSize = 14f
+            setPadding(0, dp(12), 0, dp(10))
+            setLineSpacing(dp(3).toFloat(), 1.0f)
+        }
+
+        val btnVerificar = criarBotaoSecundario("Verificar pagamento")
+        btnVerificar.setOnClickListener {
+            verificarPagamento()
+        }
+
+        val deviceInfo = TextView(this).apply {
+            text = "ID do aparelho: ${obterDeviceId()}"
+            textSize = 11f
+            setTextColor(Color.parseColor("#777777"))
+            setPadding(0, dp(10), 0, 0)
+        }
+
+        card.addView(titulo)
+        card.addView(desc)
+        card.addView(emailInput)
+        card.addView(acessoText)
+        card.addView(btnVerificar)
+        card.addView(deviceInfo)
+
+        return card
+    }
+
     private fun criarCardDias(): View {
         val card = criarCardBase()
 
@@ -173,24 +240,16 @@ class MainActivity : Activity() {
         btn7Dias = criarBotaoSeletor("7 dias")
 
         btn3Dias.setOnClickListener {
-            prefs.edit()
-                .putInt("days_count", 3)
-                .apply()
-
+            prefs.edit().putInt("days_count", 3).apply()
             atualizarSeletorDias()
             atualizarTela()
-
             Toast.makeText(this, "Modo 3 dias selecionado.", Toast.LENGTH_SHORT).show()
         }
 
         btn7Dias.setOnClickListener {
-            prefs.edit()
-                .putInt("days_count", 7)
-                .apply()
-
+            prefs.edit().putInt("days_count", 7).apply()
             atualizarSeletorDias()
             atualizarTela()
-
             Toast.makeText(this, "Modo 7 dias selecionado.", Toast.LENGTH_SHORT).show()
         }
 
@@ -216,17 +275,18 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Planos")
 
         val desc = TextView(this).apply {
-            text = "Escolha seu plano e finalize pelo Mercado Pago."
+            text = "Escolha seu plano. O pagamento será gerado automaticamente para o e-mail informado."
             textSize = 14f
             setTextColor(cinzaTexto)
             setPadding(0, dp(6), 0, dp(12))
+            setLineSpacing(dp(3).toFloat(), 1.0f)
         }
 
         val planoMensal = criarPlanoMensal()
         val planoTrimestral = criarPlanoTrimestral()
 
         val aviso = TextView(this).apply {
-            text = "Após o pagamento, aguarde a liberação conforme combinado com o vendedor."
+            text = "Após pagar, volte ao app e toque em Verificar pagamento para liberar a busca."
             textSize = 12f
             setTextColor(Color.parseColor("#777777"))
             setPadding(0, dp(10), 0, 0)
@@ -276,7 +336,7 @@ class MainActivity : Activity() {
 
         val botao = criarBotaoPrincipal("Assinar mensal")
         botao.setOnClickListener {
-            abrirLink(linkMensal)
+            iniciarCheckout("mensal")
         }
 
         box.addView(nome)
@@ -344,7 +404,7 @@ class MainActivity : Activity() {
 
         val botao = criarBotaoPrincipal("Assinar trimestral")
         botao.setOnClickListener {
-            abrirLink(linkTrimestral)
+            iniciarCheckout("trimestral")
         }
 
         box.addView(badge)
@@ -364,10 +424,11 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Controle da busca")
 
         val desc = TextView(this).apply {
-            text = "Ative a acessibilidade antes de ligar a busca automática."
+            text = "A busca automática só libera com acesso ativo e acessibilidade ativada."
             textSize = 14f
             setTextColor(cinzaTexto)
             setPadding(0, dp(6), 0, dp(12))
+            setLineSpacing(dp(3).toFloat(), 1.0f)
         }
 
         switchBusca = Switch(this).apply {
@@ -401,12 +462,13 @@ class MainActivity : Activity() {
 
         val texto = TextView(this).apply {
             text = """
-1. Ative a acessibilidade do Vaga Fácil.
-2. Escolha o modo: 3 dias ou 7 dias.
-3. Abra a tela de horários da 99.
-4. Ligue a busca automática.
-5. O app procura botões amarelos disponíveis.
-6. Para parar, volte aqui e desligue.
+1. Digite o e-mail que vai usar no pagamento.
+2. Escolha o plano mensal ou trimestral.
+3. Finalize o pagamento no Mercado Pago.
+4. Volte ao app e toque em Verificar pagamento.
+5. Com acesso ativo, ligue a busca automática.
+6. Abra a tela de horários da 99.
+7. Para parar, volte aqui e desligue.
             """.trimIndent()
             textSize = 14f
             setTextColor(Color.parseColor("#444444"))
@@ -420,7 +482,136 @@ class MainActivity : Activity() {
         return card
     }
 
+    private fun iniciarCheckout(plano: String) {
+        val email = emailInput.text.toString().trim().lowercase()
+
+        if (!email.contains("@") || email.length < 6) {
+            Toast.makeText(this, "Digite um e-mail válido primeiro.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        prefs.edit()
+            .putString("user_email", email)
+            .putBoolean("license_active", false)
+            .apply()
+
+        atualizarTela()
+
+        Toast.makeText(this, "Gerando pagamento...", Toast.LENGTH_SHORT).show()
+
+        Thread {
+            try {
+                val json = JSONObject()
+                json.put("email", email)
+                json.put("deviceId", obterDeviceId())
+                json.put("plan", plano)
+
+                val resposta = postJson("$backendUrl/api/create-checkout", json)
+
+                val ok = resposta.optBoolean("ok", false)
+                val checkoutUrl = resposta.optString("checkout_url", "")
+
+                runOnUiThread {
+                    if (ok && checkoutUrl.isNotBlank()) {
+                        abrirLink(checkoutUrl)
+                        Toast.makeText(
+                            this,
+                            "Depois de pagar, volte e toque em Verificar pagamento.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } else {
+                        Toast.makeText(
+                            this,
+                            resposta.optString("error", "Erro ao criar pagamento."),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    Toast.makeText(
+                        this,
+                        "Erro ao conectar com o servidor: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }.start()
+    }
+
+    private fun verificarPagamento() {
+        val email = emailInput.text.toString().trim().lowercase()
+
+        if (!email.contains("@") || email.length < 6) {
+            Toast.makeText(this, "Digite o e-mail usado no pagamento.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        prefs.edit().putString("user_email", email).apply()
+
+        Toast.makeText(this, "Verificando pagamento...", Toast.LENGTH_SHORT).show()
+
+        Thread {
+            try {
+                val encodedEmail = URLEncoder.encode(email, "UTF-8")
+                val encodedDevice = URLEncoder.encode(obterDeviceId(), "UTF-8")
+
+                val url = "$backendUrl/api/check-license?email=$encodedEmail&deviceId=$encodedDevice"
+                val resposta = getJson(url)
+
+                val active = resposta.optBoolean("active", false)
+                val status = resposta.optString("status", "unknown")
+                val plan = resposta.optString("plan", "none")
+                val expiresAt = resposta.optString("expires_at", "")
+
+                prefs.edit()
+                    .putBoolean("license_active", active)
+                    .putString("license_status", status)
+                    .putString("license_plan", plan)
+                    .putString("license_expires_at", expiresAt)
+                    .apply()
+
+                runOnUiThread {
+                    atualizarTela()
+
+                    if (active) {
+                        Toast.makeText(this, "Acesso liberado!", Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(
+                            this,
+                            "Pagamento ainda não liberado. Status: $status",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    Toast.makeText(
+                        this,
+                        "Erro ao verificar pagamento: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }.start()
+    }
+
     private fun alterarEstadoBusca(ativo: Boolean) {
+        if (ativo && !acessoAtivoLocal()) {
+            prefs.edit()
+                .putBoolean("robot_enabled", false)
+                .apply()
+
+            Toast.makeText(
+                this,
+                "Acesso inativo. Assine ou toque em Verificar pagamento.",
+                Toast.LENGTH_LONG
+            ).show()
+
+            atualizarTela()
+            return
+        }
+
         if (ativo && !isAccessibilityEnabled()) {
             prefs.edit()
                 .putBoolean("robot_enabled", false)
@@ -458,13 +649,20 @@ class MainActivity : Activity() {
         val acessibilidade = isAccessibilityEnabled()
         val buscaAtiva = prefs.getBoolean("robot_enabled", false)
         val dias = prefs.getInt("days_count", 3)
+        val acessoAtivo = acessoAtivoLocal()
+        val plano = prefs.getString("license_plan", "none") ?: "none"
+        val status = prefs.getString("license_status", "not_found") ?: "not_found"
+        val expira = prefs.getString("license_expires_at", "") ?: ""
 
         statusText.text = buildString {
             append("Acessibilidade: ")
             append(if (acessibilidade) "ativada" else "desativada")
             append("\n")
+            append("Acesso: ")
+            append(if (acessoAtivo) "ativo" else "inativo")
+            append("\n")
             append("Busca: ")
-            append(if (buscaAtiva && acessibilidade) "ligada" else "desligada")
+            append(if (buscaAtiva && acessibilidade && acessoAtivo) "ligada" else "desligada")
             append("\n")
             append("Modo: ")
             append("$dias dias")
@@ -472,12 +670,50 @@ class MainActivity : Activity() {
             append("Intervalo: 3 segundos")
         }
 
+        if (::acessoText.isInitialized) {
+            acessoText.text = buildString {
+                append("Status do plano: ")
+                append(if (acessoAtivo) "ATIVO" else "INATIVO")
+                append("\n")
+                append("Plano: ")
+                append(plano)
+                append("\n")
+                append("Status servidor: ")
+                append(status)
+                if (expira.isNotBlank()) {
+                    append("\n")
+                    append("Válido até: ")
+                    append(expira.take(10))
+                }
+            }
+
+            acessoText.setTextColor(if (acessoAtivo) verdeDesconto else vermelhoErro)
+        }
+
         if (::switchBusca.isInitialized) {
             switchBusca.setOnCheckedChangeListener(null)
-            switchBusca.isChecked = buscaAtiva && acessibilidade
+            switchBusca.isChecked = buscaAtiva && acessibilidade && acessoAtivo
             switchBusca.setOnCheckedChangeListener { _, isChecked ->
                 alterarEstadoBusca(isChecked)
             }
+        }
+
+        if (!acessoAtivo && buscaAtiva) {
+            prefs.edit().putBoolean("robot_enabled", false).apply()
+        }
+    }
+
+    private fun acessoAtivoLocal(): Boolean {
+        val active = prefs.getBoolean("license_active", false)
+        if (!active) return false
+
+        val expiresAt = prefs.getString("license_expires_at", null) ?: return false
+
+        return try {
+            val expira = Instant.parse(expiresAt)
+            expira.isAfter(Instant.now())
+        } catch (_: Exception) {
+            false
         }
     }
 
@@ -488,6 +724,56 @@ class MainActivity : Activity() {
             aplicarEstiloSeletor(btn3Dias, dias == 3)
             aplicarEstiloSeletor(btn7Dias, dias == 7)
         }
+    }
+
+    private fun obterDeviceId(): String {
+        return Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.ANDROID_ID
+        ) ?: "unknown-device"
+    }
+
+    private fun postJson(urlString: String, body: JSONObject): JSONObject {
+        val connection = URL(urlString).openConnection() as HttpURLConnection
+
+        connection.requestMethod = "POST"
+        connection.connectTimeout = 45000
+        connection.readTimeout = 45000
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.doOutput = true
+
+        OutputStreamWriter(connection.outputStream).use { writer ->
+            writer.write(body.toString())
+            writer.flush()
+        }
+
+        val code = connection.responseCode
+        val stream = if (code in 200..299) {
+            connection.inputStream
+        } else {
+            connection.errorStream
+        }
+
+        val text = BufferedReader(InputStreamReader(stream)).use { it.readText() }
+        return JSONObject(text)
+    }
+
+    private fun getJson(urlString: String): JSONObject {
+        val connection = URL(urlString).openConnection() as HttpURLConnection
+
+        connection.requestMethod = "GET"
+        connection.connectTimeout = 45000
+        connection.readTimeout = 45000
+
+        val code = connection.responseCode
+        val stream = if (code in 200..299) {
+            connection.inputStream
+        } else {
+            connection.errorStream
+        }
+
+        val text = BufferedReader(InputStreamReader(stream)).use { it.readText() }
+        return JSONObject(text)
     }
 
     private fun abrirAcessibilidade() {
