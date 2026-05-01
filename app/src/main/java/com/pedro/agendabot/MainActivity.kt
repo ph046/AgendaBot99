@@ -34,9 +34,10 @@ class MainActivity : Activity() {
 
     /*
      * LINKS REAIS DO MERCADO PAGO.
+     * Corrigido: mensal e trimestral invertidos.
      */
-    private val linkMensal = "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=9786832ee8224e78b048956df6963dc2"
-    private val linkTrimestral = "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=ca92e94590464e44b834d5bb61454732"
+    private val linkMensal = "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=ca92e94590464e44b834d5bb61454732"
+    private val linkTrimestral = "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=9786832ee8224e78b048956df6963dc2"
 
     private val amarelo99 = Color.parseColor("#FFD400")
     private val amareloEscuro = Color.parseColor("#FFB800")
@@ -215,7 +216,7 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Planos")
 
         val desc = TextView(this).apply {
-            text = "Escolha o plano e finalize pelo Mercado Pago."
+            text = "Escolha seu plano e finalize pelo Mercado Pago."
             textSize = 14f
             setTextColor(cinzaTexto)
             setPadding(0, dp(6), 0, dp(12))
@@ -268,7 +269,7 @@ class MainActivity : Activity() {
         }
 
         val detalhe = TextView(this).apply {
-            text = "Para quem quer começar pagando pouco."
+            text = "Acesso mensal para usar a busca automática."
             textSize = 14f
             setTextColor(cinzaTexto)
         }
@@ -299,7 +300,7 @@ class MainActivity : Activity() {
         }
 
         val badge = TextView(this).apply {
-            text = "MAIS VANTAJOSO"
+            text = "R$ 2,98 OFF"
             textSize = 12f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
