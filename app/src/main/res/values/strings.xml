@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">AgendaBot 99</string>
+    <string name="app_name">VagaFacil</string>
 
     <string name="accessibility_description">
         Automatiza a verificação dos dias configurados e clica somente quando o botão amarelo Quero me cadastrar estiver disponível.
