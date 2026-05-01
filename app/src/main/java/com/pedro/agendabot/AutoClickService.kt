@@ -17,6 +17,7 @@ import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import java.text.Normalizer
+import java.time.Instant
 import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
@@ -71,6 +72,7 @@ class AutoClickService : AccessibilityService() {
 
     private fun executarCiclo() {
         if (!roboLigado()) {
+            desligarRoboLocal()
             loopAtivo = false
             screenshotEmAndamento = false
             return
@@ -97,7 +99,27 @@ class AutoClickService : AccessibilityService() {
     }
 
     private fun roboLigado(): Boolean {
-        return prefs.getBoolean("robot_enabled", false)
+        return prefs.getBoolean("robot_enabled", false) && acessoAtivoLocal()
+    }
+
+    private fun acessoAtivoLocal(): Boolean {
+        val active = prefs.getBoolean("license_active", false)
+        if (!active) return false
+
+        val expiresAt = prefs.getString("license_expires_at", null) ?: return false
+
+        return try {
+            val expira = Instant.parse(expiresAt)
+            expira.isAfter(Instant.now())
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun desligarRoboLocal() {
+        prefs.edit()
+            .putBoolean("robot_enabled", false)
+            .apply()
     }
 
     private fun telaCorreta(root: AccessibilityNodeInfo): Boolean {
@@ -341,6 +363,11 @@ class AutoClickService : AccessibilityService() {
 
         ordenados.forEachIndexed { index, rect ->
             handler.postDelayed({
+                if (!roboLigado()) {
+                    finalizar()
+                    return@postDelayed
+                }
+
                 clicarNaTela(
                     rect.centerX().toFloat(),
                     rect.centerY().toFloat()
@@ -427,19 +454,19 @@ class AutoClickService : AccessibilityService() {
 
         return if (quantidadeDias >= 7) {
             listOf(
-                Pair(0.11f, 0.245f), // 1ª data visível
-                Pair(0.24f, 0.245f), // 2ª data visível
-                Pair(0.37f, 0.245f), // 3ª data visível
-                Pair(0.50f, 0.245f), // 4ª data visível
-                Pair(0.63f, 0.245f), // 5ª data visível
-                Pair(0.76f, 0.245f), // 6ª data visível
-                Pair(0.89f, 0.245f)  // 7ª data visível
+                Pair(0.11f, 0.245f),
+                Pair(0.24f, 0.245f),
+                Pair(0.37f, 0.245f),
+                Pair(0.50f, 0.245f),
+                Pair(0.63f, 0.245f),
+                Pair(0.76f, 0.245f),
+                Pair(0.89f, 0.245f)
             )
         } else {
             listOf(
-                Pair(0.11f, 0.245f), // 1ª data visível
-                Pair(0.24f, 0.245f), // 2ª data visível
-                Pair(0.37f, 0.245f)  // 3ª data visível
+                Pair(0.11f, 0.245f),
+                Pair(0.24f, 0.245f),
+                Pair(0.37f, 0.245f)
             )
         }
     }
