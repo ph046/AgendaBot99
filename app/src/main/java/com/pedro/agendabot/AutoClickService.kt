@@ -1,8 +1,15 @@
 package com.pedro.agendabot
 
+import android.Manifest
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Path
@@ -30,6 +37,10 @@ class AutoClickService : AccessibilityService() {
     private var indiceData = 0
     private var ultimoCliqueData = 0L
     private var screenshotEmAndamento = false
+    private var ultimaNotificacao = 0L
+
+    private val notificationChannelId = "vaga_facil_vagas"
+    private val notificationId = 9901
 
     private val prefs by lazy {
         getSharedPreferences("bot_config", Context.MODE_PRIVATE)
@@ -43,6 +54,7 @@ class AutoClickService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        criarCanalNotificacao()
         iniciarLoopSePrecisar()
     }
 
@@ -199,6 +211,7 @@ class AutoClickService : AccessibilityService() {
                         if (botoesAmarelos.isNotEmpty()) {
                             clicarTodosOsBotoes(botoesAmarelos) {
                                 vibrar()
+                                enviarNotificacaoVagaPegada()
                                 screenshotEmAndamento = false
                                 finalizar(true)
                             }
@@ -518,6 +531,97 @@ class AutoClickService : AccessibilityService() {
             }
         } catch (_: Exception) {
             // Ignora erro de vibração.
+        }
+    }
+
+    private fun criarCanalNotificacao() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val manager = getSystemService(NotificationManager::class.java)
+
+                val channel = NotificationChannel(
+                    notificationChannelId,
+                    "Alertas de vagas",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Notificações quando o Vaga Fácil clicar em uma vaga disponível."
+                    enableVibration(true)
+                }
+
+                manager.createNotificationChannel(channel)
+            } catch (_: Exception) {
+                // Ignora erro ao criar canal.
+            }
+        }
+    }
+
+    private fun enviarNotificacaoVagaPegada() {
+        try {
+            val agora = System.currentTimeMillis()
+
+            if (agora - ultimaNotificacao < 15000) {
+                return
+            }
+
+            ultimaNotificacao = agora
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    return
+                }
+            }
+
+            criarCanalNotificacao()
+
+            val abrirAppIntent = packageManager.getLaunchIntentForPackage(packageName)
+                ?: Intent(this, MainActivity::class.java)
+
+            abrirAppIntent.addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            )
+
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+
+            val pendingIntent = PendingIntent.getActivity(
+                this,
+                9902,
+                abrirAppIntent,
+                flags
+            )
+
+            val titulo = "Vaga encontrada!"
+            val mensagem = "O Vaga Fácil clicou em um horário disponível. Confira a tela da 99."
+
+            val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Notification.Builder(this, notificationChannelId)
+            } else {
+                @Suppress("DEPRECATION")
+                Notification.Builder(this)
+            }
+
+            builder
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(titulo)
+                .setContentText(mensagem)
+                .setStyle(Notification.BigTextStyle().bigText(mensagem))
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setWhen(System.currentTimeMillis())
+                .setShowWhen(true)
+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                @Suppress("DEPRECATION")
+                builder.setPriority(Notification.PRIORITY_HIGH)
+            }
+
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.notify(notificationId, builder.build())
+        } catch (_: Exception) {
+            // Ignora erro de notificação para não travar o robô.
         }
     }
 
