@@ -33,10 +33,10 @@ class MainActivity : Activity() {
     }
 
     /*
-     * TROQUE ESSES LINKS PELOS SEUS LINKS REAIS DO MERCADO PAGO.
+     * LINKS REAIS DO MERCADO PAGO.
      */
-    private val linkMensal = "https://mpago.la/SEU_LINK_MENSAL"
-    private val linkTrimestral = "https://mpago.la/SEU_LINK_TRIMESTRAL"
+    private val linkMensal = "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=9786832ee8224e78b048956df6963dc2"
+    private val linkTrimestral = "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=ca92e94590464e44b834d5bb61454732"
 
     private val amarelo99 = Color.parseColor("#FFD400")
     private val amareloEscuro = Color.parseColor("#FFB800")
@@ -225,7 +225,7 @@ class MainActivity : Activity() {
         val planoTrimestral = criarPlanoTrimestral()
 
         val aviso = TextView(this).apply {
-            text = "Depois troque os links de exemplo pelos seus links reais do Mercado Pago."
+            text = "Após o pagamento, aguarde a liberação conforme combinado com o vendedor."
             textSize = 12f
             setTextColor(Color.parseColor("#777777"))
             setPadding(0, dp(10), 0, 0)
@@ -495,15 +495,6 @@ class MainActivity : Activity() {
 
     private fun abrirLink(url: String) {
         try {
-            if (url.contains("SEU_LINK")) {
-                Toast.makeText(
-                    this,
-                    "Troque o link do Mercado Pago no código.",
-                    Toast.LENGTH_LONG
-                ).show()
-                return
-            }
-
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
         } catch (_: Exception) {
             Toast.makeText(this, "Não foi possível abrir o link.", Toast.LENGTH_SHORT).show()
