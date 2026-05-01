@@ -292,14 +292,14 @@ class MainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
         }
 
-        btn3Dias = criarBotaoSeletor("3 dias")
+        btn3Dias = criarBotaoSeletor("3 dias (OL)")
         btn7Dias = criarBotaoSeletor("7 dias")
 
         btn3Dias.setOnClickListener {
             prefs.edit().putInt("days_count", 3).apply()
             atualizarSeletorDias()
             atualizarTela()
-            Toast.makeText(this, "Modo 3 dias selecionado.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Modo 3 dias (OL) selecionado.", Toast.LENGTH_SHORT).show()
         }
 
         btn7Dias.setOnClickListener {
@@ -518,7 +518,7 @@ class MainActivity : Activity() {
 7. Ative a opção "Permitir configurações restritas".
 8. Volte e abra a tela de acessibilidade.
 9. Ative o serviço do VagaFacil na acessibilidade.
-10. Escolha o modo: 3 dias ou 7 dias.
+10. Escolha o modo: 3 dias (OL) ou 7 dias.
 11. Com acesso ativo, ligue a busca automática.
 12. Abra a tela de horários da 99.
 13. Para parar, volte aqui e desligue.
@@ -727,7 +727,7 @@ class MainActivity : Activity() {
             append(if (buscaAtiva && acessibilidade && acessoAtivo) "ligada" else "desligada")
             append("\n")
             append("Modo: ")
-            append("$dias dias")
+            append(if (dias == 3) "3 dias (OL)" else "7 dias")
             append("\n")
             append("Intervalo: 3 segundos")
         }
