@@ -79,8 +79,6 @@ class MainActivity : Activity() {
 
         root.addView(criarTopo())
         root.addView(espaco(14))
-        root.addView(criarCardStatus())
-        root.addView(espaco(14))
         root.addView(criarCardAtivacao())
         root.addView(espaco(14))
         root.addView(criarCardPlanos())
@@ -88,6 +86,8 @@ class MainActivity : Activity() {
         root.addView(criarCardDias())
         root.addView(espaco(14))
         root.addView(criarCardControle())
+        root.addView(espaco(14))
+        root.addView(criarCardStatus())
         root.addView(espaco(14))
         root.addView(criarCardComoUsar())
 
@@ -123,10 +123,10 @@ class MainActivity : Activity() {
             textSize = 12f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
-            setPadding(dp(10), dp(6), dp(10), dp(6))
+            setPadding(dp(14), dp(8), dp(14), dp(8))
             background = GradientDrawable().apply {
                 cornerRadius = dp(20).toFloat()
-                setColor(Color.parseColor("#55FFFFFF"))
+                setColor(Color.parseColor("#FFF0A8"))
             }
         }
 
@@ -140,20 +140,21 @@ class MainActivity : Activity() {
                 shape = GradientDrawable.OVAL
                 setColor(Color.WHITE)
             }
-            layoutParams = LinearLayout.LayoutParams(dp(46), dp(46)).apply {
-                marginStart = dp(10)
-            }
+        }
+
+        val logoLp = LinearLayout.LayoutParams(dp(56), dp(56)).apply {
+            marginStart = dp(12)
         }
 
         linhaTopo.addView(badge)
-        linhaTopo.addView(logo99)
+        linhaTopo.addView(logo99, logoLp)
 
         val title = TextView(this).apply {
             text = "Vaga Fácil"
-            textSize = 31f
+            textSize = 30f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
-            setPadding(0, dp(14), 0, dp(4))
+            setPadding(0, dp(22), 0, dp(6))
         }
 
         val desc = TextView(this).apply {
@@ -165,12 +166,18 @@ class MainActivity : Activity() {
 
         val linhaChips = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(14), 0, 0)
+            setPadding(0, dp(18), 0, 0)
         }
 
-        linhaChips.addView(criarChipTopo("Rápido"))
-        linhaChips.addView(criarChipTopo("Automático", true))
-        linhaChips.addView(criarChipTopo("Simples", true))
+        val chip1 = criarChipTopo("Rápido")
+        val chip2 = criarChipTopo("Automático")
+        val chip3 = criarChipTopo("Simples")
+
+        linhaChips.addView(chip1)
+        linhaChips.addView(espacoHorizontal(10))
+        linhaChips.addView(chip2)
+        linhaChips.addView(espacoHorizontal(10))
+        linhaChips.addView(chip3)
 
         card.addView(linhaTopo)
         card.addView(title)
@@ -180,24 +187,16 @@ class MainActivity : Activity() {
         return card
     }
 
-    private fun criarChipTopo(texto: String, comMargem: Boolean = false): View {
+    private fun criarChipTopo(texto: String): TextView {
         return TextView(this).apply {
             text = texto
             textSize = 12f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
-            setPadding(dp(10), dp(6), dp(10), dp(6))
+            setPadding(dp(18), dp(10), dp(18), dp(10))
             background = GradientDrawable().apply {
-                cornerRadius = dp(18).toFloat()
-                setColor(Color.parseColor("#55FFFFFF"))
-            }
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                if (comMargem) {
-                    marginStart = dp(8)
-                }
+                cornerRadius = dp(22).toFloat()
+                setColor(Color.parseColor("#FFF0A8"))
             }
         }
     }
@@ -273,6 +272,55 @@ class MainActivity : Activity() {
         card.addView(acessoText)
         card.addView(btnVerificar)
         card.addView(deviceInfo)
+
+        return card
+    }
+
+    private fun criarCardDias(): View {
+        val card = criarCardBase()
+
+        val titulo = criarTitulo("Modo de busca")
+
+        val desc = TextView(this).apply {
+            text = "Escolha quantos dias a busca deve verificar em loop."
+            textSize = 14f
+            setTextColor(cinzaTexto)
+            setPadding(0, dp(6), 0, dp(12))
+        }
+
+        val linha = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        btn3Dias = criarBotaoSeletor("3 dias")
+        btn7Dias = criarBotaoSeletor("7 dias")
+
+        btn3Dias.setOnClickListener {
+            prefs.edit().putInt("days_count", 3).apply()
+            atualizarSeletorDias()
+            atualizarTela()
+            Toast.makeText(this, "Modo 3 dias selecionado.", Toast.LENGTH_SHORT).show()
+        }
+
+        btn7Dias.setOnClickListener {
+            prefs.edit().putInt("days_count", 7).apply()
+            atualizarSeletorDias()
+            atualizarTela()
+            Toast.makeText(this, "Modo 7 dias selecionado.", Toast.LENGTH_SHORT).show()
+        }
+
+        val lp1 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+            marginEnd = dp(8)
+        }
+
+        val lp2 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+
+        linha.addView(btn3Dias, lp1)
+        linha.addView(btn7Dias, lp2)
+
+        card.addView(titulo)
+        card.addView(desc)
+        card.addView(linha)
 
         return card
     }
@@ -417,55 +465,6 @@ class MainActivity : Activity() {
         return box
     }
 
-    private fun criarCardDias(): View {
-        val card = criarCardBase()
-
-        val titulo = criarTitulo("Modo de busca")
-
-        val desc = TextView(this).apply {
-            text = "Escolha quantos dias a busca deve verificar em loop."
-            textSize = 14f
-            setTextColor(cinzaTexto)
-            setPadding(0, dp(6), 0, dp(12))
-        }
-
-        val linha = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-        }
-
-        btn3Dias = criarBotaoSeletor("3 dias")
-        btn7Dias = criarBotaoSeletor("7 dias")
-
-        btn3Dias.setOnClickListener {
-            prefs.edit().putInt("days_count", 3).apply()
-            atualizarSeletorDias()
-            atualizarTela()
-            Toast.makeText(this, "Modo 3 dias selecionado.", Toast.LENGTH_SHORT).show()
-        }
-
-        btn7Dias.setOnClickListener {
-            prefs.edit().putInt("days_count", 7).apply()
-            atualizarSeletorDias()
-            atualizarTela()
-            Toast.makeText(this, "Modo 7 dias selecionado.", Toast.LENGTH_SHORT).show()
-        }
-
-        val lp1 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-            marginEnd = dp(8)
-        }
-
-        val lp2 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-
-        linha.addView(btn3Dias, lp1)
-        linha.addView(btn7Dias, lp2)
-
-        card.addView(titulo)
-        card.addView(desc)
-        card.addView(linha)
-
-        return card
-    }
-
     private fun criarCardControle(): View {
         val card = criarCardBase()
 
@@ -514,10 +513,15 @@ class MainActivity : Activity() {
 2. Escolha o plano mensal ou trimestral.
 3. Finalize o pagamento no Mercado Pago.
 4. Volte ao app e toque em Verificar pagamento.
-5. Escolha o modo: 3 dias ou 7 dias.
-6. Com acesso ativo, ligue a busca automática.
-7. Abra a tela de horários da 99.
-8. Para parar, volte aqui e desligue.
+5. Se a acessibilidade não puder ser ativada, abra as informações do app VagaFacil.
+6. Toque no menu de 3 pontos no canto superior direito.
+7. Ative a opção "Permitir configurações restritas".
+8. Volte e abra a tela de acessibilidade.
+9. Ative o serviço do VagaFacil na acessibilidade.
+10. Escolha o modo: 3 dias ou 7 dias.
+11. Com acesso ativo, ligue a busca automática.
+12. Abra a tela de horários da 99.
+13. Para parar, volte aqui e desligue.
             """.trimIndent()
             textSize = 14f
             setTextColor(Color.parseColor("#444444"))
@@ -525,8 +529,17 @@ class MainActivity : Activity() {
             setPadding(0, dp(8), 0, 0)
         }
 
+        val dicaExtra = TextView(this).apply {
+            text = "Dica: em alguns Androids, apps instalados fora da Play Store precisam da permissão de configurações restritas para liberar a acessibilidade."
+            textSize = 12f
+            setTextColor(Color.parseColor("#777777"))
+            setPadding(0, dp(12), 0, 0)
+            setLineSpacing(dp(3).toFloat(), 1.0f)
+        }
+
         card.addView(titulo)
         card.addView(texto)
+        card.addView(dicaExtra)
 
         return card
     }
@@ -948,6 +961,15 @@ class MainActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 dp(valorDp)
+            )
+        }
+    }
+
+    private fun espacoHorizontal(valorDp: Int): View {
+        return View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                dp(valorDp),
+                ViewGroup.LayoutParams.MATCH_PARENT
             )
         }
     }
