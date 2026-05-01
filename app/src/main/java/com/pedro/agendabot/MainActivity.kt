@@ -119,7 +119,7 @@ class MainActivity : Activity() {
         }
 
         val badge = TextView(this).apply {
-            text = "99 ENTREGA"
+            text = "99FOOD"
             textSize = 12f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
@@ -158,7 +158,7 @@ class MainActivity : Activity() {
         }
 
         val desc = TextView(this).apply {
-            text = "Busque horários disponíveis com mais praticidade."
+            text = "Sem tempo para ficar acompanhando vagas?\nO Vaga Fácil monitora horários disponíveis e pega a vaga para você automaticamente."
             textSize = 15f
             setTextColor(Color.parseColor("#2A2A2A"))
             setLineSpacing(dp(3).toFloat(), 1.0f)
