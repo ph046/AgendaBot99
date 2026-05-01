@@ -34,15 +34,6 @@ class AutoClickService : AccessibilityService() {
         getSharedPreferences("bot_config", Context.MODE_PRIVATE)
     }
 
-    /*
-     * Posições das 3 primeiras datas visíveis.
-     */
-    private val datas = listOf(
-        Pair(0.11f, 0.245f), // 1ª data visível
-        Pair(0.24f, 0.245f), // 2ª data visível
-        Pair(0.37f, 0.245f)  // 3ª data visível
-    )
-
     private val loop = object : Runnable {
         override fun run() {
             executarCiclo()
@@ -134,11 +125,6 @@ class AutoClickService : AccessibilityService() {
         }
     }
 
-    /*
-     * Agora ele NÃO clica só pelo texto.
-     * Ele primeiro localiza os botões "Quero me cadastrar",
-     * depois confere no print se a área do botão está AMARELA.
-     */
     private fun verificarBotoesAmarelos(
         root: AccessibilityNodeInfo,
         finalizar: (Boolean) -> Unit
@@ -258,10 +244,6 @@ class AutoClickService : AccessibilityService() {
         return null
     }
 
-    /*
-     * Expande a área porque às vezes o texto ocupa só o centro,
-     * mas o amarelo está no fundo do botão.
-     */
     private fun expandirAreaDoBotao(rectOriginal: Rect): Rect {
         val display = resources.displayMetrics
         val larguraTela = display.widthPixels
@@ -284,10 +266,6 @@ class AutoClickService : AccessibilityService() {
         return Rect(left, top, right, bottom)
     }
 
-    /*
-     * Detecta amarelo do botão.
-     * Cinza não passa nesse filtro.
-     */
     private fun botaoEstaAmarelo(bitmap: Bitmap, rectOriginal: Rect): Boolean {
         val rect = Rect(
             rectOriginal.left.coerceAtLeast(0),
@@ -418,6 +396,14 @@ class AutoClickService : AccessibilityService() {
 
         ultimoCliqueData = agora
 
+        val datas = obterDatasConfiguradas()
+
+        if (datas.isEmpty()) return
+
+        if (indiceData >= datas.size) {
+            indiceData = 0
+        }
+
         val display = resources.displayMetrics
         val largura = display.widthPixels
         val altura = display.heightPixels
@@ -433,6 +419,28 @@ class AutoClickService : AccessibilityService() {
 
         if (indiceData >= datas.size) {
             indiceData = 0
+        }
+    }
+
+    private fun obterDatasConfiguradas(): List<Pair<Float, Float>> {
+        val quantidadeDias = prefs.getInt("days_count", 3)
+
+        return if (quantidadeDias >= 7) {
+            listOf(
+                Pair(0.11f, 0.245f), // 1ª data visível
+                Pair(0.24f, 0.245f), // 2ª data visível
+                Pair(0.37f, 0.245f), // 3ª data visível
+                Pair(0.50f, 0.245f), // 4ª data visível
+                Pair(0.63f, 0.245f), // 5ª data visível
+                Pair(0.76f, 0.245f), // 6ª data visível
+                Pair(0.89f, 0.245f)  // 7ª data visível
+            )
+        } else {
+            listOf(
+                Pair(0.11f, 0.245f), // 1ª data visível
+                Pair(0.24f, 0.245f), // 2ª data visível
+                Pair(0.37f, 0.245f)  // 3ª data visível
+            )
         }
     }
 
