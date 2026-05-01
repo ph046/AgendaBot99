@@ -6,6 +6,8 @@
     <application
         android:allowBackup="false"
         android:label="@string/app_name"
+        android:icon="@drawable/ic_vagafacil"
+        android:roundIcon="@drawable/ic_vagafacil"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
