@@ -68,7 +68,7 @@ class MainActivity : Activity() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(18), dp(16), dp(28))
+            setPadding(dp(16), dp(12), dp(16), dp(24))
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -78,17 +78,17 @@ class MainActivity : Activity() {
         scroll.addView(root)
 
         root.addView(criarTopo())
-        root.addView(espaco(14))
-        root.addView(criarCardAtivacao())
-        root.addView(espaco(14))
+        root.addView(espaco(10))
         root.addView(criarCardPlanos())
-        root.addView(espaco(14))
+        root.addView(espaco(10))
+        root.addView(criarCardAtivacao())
+        root.addView(espaco(10))
         root.addView(criarCardDias())
-        root.addView(espaco(14))
+        root.addView(espaco(10))
         root.addView(criarCardControle())
-        root.addView(espaco(14))
+        root.addView(espaco(10))
         root.addView(criarCardStatus())
-        root.addView(espaco(14))
+        root.addView(espaco(10))
         root.addView(criarCardComoUsar())
 
         setContentView(scroll)
@@ -103,14 +103,14 @@ class MainActivity : Activity() {
     private fun criarTopo(): View {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(18), dp(18), dp(18))
+            setPadding(dp(14), dp(14), dp(14), dp(14))
             background = GradientDrawable(
                 GradientDrawable.Orientation.LEFT_RIGHT,
                 intArrayOf(amarelo99, amareloEscuro)
             ).apply {
-                cornerRadius = dp(28).toFloat()
+                cornerRadius = dp(26).toFloat()
             }
-            elevation = dp(3).toFloat()
+            elevation = dp(2).toFloat()
         }
 
         val linhaTopo = LinearLayout(this).apply {
@@ -120,19 +120,19 @@ class MainActivity : Activity() {
 
         val badge = TextView(this).apply {
             text = "99FOOD"
-            textSize = 12f
+            textSize = 11f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
-            setPadding(dp(14), dp(8), dp(14), dp(8))
+            setPadding(dp(12), dp(7), dp(12), dp(7))
             background = GradientDrawable().apply {
-                cornerRadius = dp(20).toFloat()
+                cornerRadius = dp(18).toFloat()
                 setColor(Color.parseColor("#FFF0A8"))
             }
         }
 
         val logo99 = TextView(this).apply {
             text = "99"
-            textSize = 18f
+            textSize = 17f
             gravity = Gravity.CENTER
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
@@ -142,8 +142,8 @@ class MainActivity : Activity() {
             }
         }
 
-        val logoLp = LinearLayout.LayoutParams(dp(56), dp(56)).apply {
-            marginStart = dp(12)
+        val logoLp = LinearLayout.LayoutParams(dp(48), dp(48)).apply {
+            marginStart = dp(10)
         }
 
         linhaTopo.addView(badge)
@@ -151,22 +151,22 @@ class MainActivity : Activity() {
 
         val title = TextView(this).apply {
             text = "Vaga Fácil"
-            textSize = 30f
+            textSize = 27f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
-            setPadding(0, dp(22), 0, dp(6))
+            setPadding(0, dp(14), 0, dp(4))
         }
 
         val desc = TextView(this).apply {
-            text = "Sem tempo para ficar acompanhando vagas?\nO Vaga Fácil monitora horários disponíveis e pega a vaga para você automaticamente."
-            textSize = 15f
+            text = "Sem tempo para acompanhar vagas? O Vaga Fácil monitora horários disponíveis e pega a vaga para você automaticamente."
+            textSize = 13.5f
             setTextColor(Color.parseColor("#2A2A2A"))
-            setLineSpacing(dp(3).toFloat(), 1.0f)
+            setLineSpacing(dp(2).toFloat(), 1.0f)
         }
 
         val linhaChips = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dp(18), 0, 0)
+            setPadding(0, dp(12), 0, 0)
         }
 
         val chip1 = criarChipTopo("Rápido")
@@ -174,9 +174,9 @@ class MainActivity : Activity() {
         val chip3 = criarChipTopo("Simples")
 
         linhaChips.addView(chip1)
-        linhaChips.addView(espacoHorizontal(10))
+        linhaChips.addView(espacoHorizontal(8))
         linhaChips.addView(chip2)
-        linhaChips.addView(espacoHorizontal(10))
+        linhaChips.addView(espacoHorizontal(8))
         linhaChips.addView(chip3)
 
         card.addView(linhaTopo)
@@ -190,12 +190,12 @@ class MainActivity : Activity() {
     private fun criarChipTopo(texto: String): TextView {
         return TextView(this).apply {
             text = texto
-            textSize = 12f
+            textSize = 11f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
-            setPadding(dp(18), dp(10), dp(18), dp(10))
+            setPadding(dp(14), dp(8), dp(14), dp(8))
             background = GradientDrawable().apply {
-                cornerRadius = dp(22).toFloat()
+                cornerRadius = dp(20).toFloat()
                 setColor(Color.parseColor("#FFF0A8"))
             }
         }
@@ -207,9 +207,9 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Status")
 
         statusText = TextView(this).apply {
-            textSize = 15f
+            textSize = 14f
             setTextColor(preto99)
-            setPadding(0, dp(8), 0, 0)
+            setPadding(0, dp(6), 0, 0)
             setLineSpacing(dp(2).toFloat(), 1.0f)
         }
 
@@ -226,20 +226,20 @@ class MainActivity : Activity() {
 
         val desc = TextView(this).apply {
             text = "Digite o e-mail usado no pagamento. Depois de pagar, volte aqui e toque em Verificar pagamento."
-            textSize = 14f
+            textSize = 13f
             setTextColor(cinzaTexto)
-            setPadding(0, dp(6), 0, dp(12))
-            setLineSpacing(dp(3).toFloat(), 1.0f)
+            setPadding(0, dp(5), 0, dp(10))
+            setLineSpacing(dp(2).toFloat(), 1.0f)
         }
 
         emailInput = EditText(this).apply {
             hint = "seuemail@gmail.com"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-            textSize = 16f
+            textSize = 15f
             setSingleLine(true)
             setTextColor(preto99)
             setHintTextColor(Color.parseColor("#999999"))
-            setPadding(dp(14), dp(12), dp(14), dp(12))
+            setPadding(dp(12), dp(10), dp(12), dp(10))
             setText(prefs.getString("user_email", "") ?: "")
             background = GradientDrawable().apply {
                 cornerRadius = dp(14).toFloat()
@@ -249,9 +249,9 @@ class MainActivity : Activity() {
         }
 
         acessoText = TextView(this).apply {
-            textSize = 14f
-            setPadding(0, dp(12), 0, dp(10))
-            setLineSpacing(dp(3).toFloat(), 1.0f)
+            textSize = 13f
+            setPadding(0, dp(10), 0, dp(8))
+            setLineSpacing(dp(2).toFloat(), 1.0f)
         }
 
         val btnVerificar = criarBotaoSecundario("Verificar pagamento")
@@ -261,9 +261,9 @@ class MainActivity : Activity() {
 
         val deviceInfo = TextView(this).apply {
             text = "ID do aparelho: ${obterDeviceId()}"
-            textSize = 11f
+            textSize = 10.5f
             setTextColor(Color.parseColor("#777777"))
-            setPadding(0, dp(10), 0, 0)
+            setPadding(0, dp(8), 0, 0)
         }
 
         card.addView(titulo)
@@ -283,9 +283,9 @@ class MainActivity : Activity() {
 
         val desc = TextView(this).apply {
             text = "Escolha quantos dias a busca deve verificar em loop."
-            textSize = 14f
+            textSize = 13f
             setTextColor(cinzaTexto)
-            setPadding(0, dp(6), 0, dp(12))
+            setPadding(0, dp(5), 0, dp(10))
         }
 
         val linha = LinearLayout(this).apply {
@@ -332,10 +332,10 @@ class MainActivity : Activity() {
 
         val desc = TextView(this).apply {
             text = "Escolha seu plano. O pagamento será gerado automaticamente para o e-mail informado."
-            textSize = 14f
+            textSize = 13f
             setTextColor(cinzaTexto)
-            setPadding(0, dp(6), 0, dp(12))
-            setLineSpacing(dp(3).toFloat(), 1.0f)
+            setPadding(0, dp(5), 0, dp(10))
+            setLineSpacing(dp(2).toFloat(), 1.0f)
         }
 
         val planoMensal = criarPlanoMensal()
@@ -343,15 +343,15 @@ class MainActivity : Activity() {
 
         val aviso = TextView(this).apply {
             text = "Após pagar, volte ao app e toque em Verificar pagamento para liberar a busca."
-            textSize = 12f
+            textSize = 11f
             setTextColor(Color.parseColor("#777777"))
-            setPadding(0, dp(10), 0, 0)
+            setPadding(0, dp(8), 0, 0)
         }
 
         card.addView(titulo)
         card.addView(desc)
         card.addView(planoMensal)
-        card.addView(espaco(12))
+        card.addView(espaco(10))
         card.addView(planoTrimestral)
         card.addView(aviso)
 
@@ -361,9 +361,9 @@ class MainActivity : Activity() {
     private fun criarPlanoMensal(): View {
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(14), dp(14), dp(14))
+            setPadding(dp(12), dp(12), dp(12), dp(12))
             background = GradientDrawable().apply {
-                cornerRadius = dp(20).toFloat()
+                cornerRadius = dp(18).toFloat()
                 setColor(Color.parseColor("#FFFBEA"))
                 setStroke(dp(1), Color.parseColor("#FFE58A"))
             }
@@ -371,22 +371,22 @@ class MainActivity : Activity() {
 
         val nome = TextView(this).apply {
             text = "Plano Mensal"
-            textSize = 18f
+            textSize = 17f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
         }
 
         val preco = TextView(this).apply {
             text = "R$ 9,99/mês"
-            textSize = 27f
+            textSize = 24f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
-            setPadding(0, dp(6), 0, dp(4))
+            setPadding(0, dp(4), 0, dp(3))
         }
 
         val detalhe = TextView(this).apply {
             text = "Acesso mensal para usar a busca automática."
-            textSize = 14f
+            textSize = 13f
             setTextColor(cinzaTexto)
         }
 
@@ -398,7 +398,7 @@ class MainActivity : Activity() {
         box.addView(nome)
         box.addView(preco)
         box.addView(detalhe)
-        box.addView(espaco(10))
+        box.addView(espaco(8))
         box.addView(botao)
 
         return box
@@ -407,9 +407,9 @@ class MainActivity : Activity() {
     private fun criarPlanoTrimestral(): View {
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(14), dp(14), dp(14))
+            setPadding(dp(12), dp(12), dp(12), dp(12))
             background = GradientDrawable().apply {
-                cornerRadius = dp(20).toFloat()
+                cornerRadius = dp(18).toFloat()
                 setColor(Color.parseColor("#FFF7CC"))
                 setStroke(dp(2), amareloEscuro)
             }
@@ -417,12 +417,12 @@ class MainActivity : Activity() {
 
         val badge = TextView(this).apply {
             text = "R$ 2,98 OFF"
-            textSize = 12f
+            textSize = 11f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
-            setPadding(dp(10), dp(6), dp(10), dp(6))
+            setPadding(dp(10), dp(5), dp(10), dp(5))
             background = GradientDrawable().apply {
-                cornerRadius = dp(20).toFloat()
+                cornerRadius = dp(18).toFloat()
                 setColor(amarelo99)
                 setStroke(dp(1), amareloEscuro)
             }
@@ -430,23 +430,23 @@ class MainActivity : Activity() {
 
         val nome = TextView(this).apply {
             text = "Plano Trimestral"
-            textSize = 18f
+            textSize = 17f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
-            setPadding(0, dp(10), 0, 0)
+            setPadding(0, dp(8), 0, 0)
         }
 
         val preco = TextView(this).apply {
             text = "R$ 26,99/trimestre"
-            textSize = 27f
+            textSize = 24f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
-            setPadding(0, dp(6), 0, dp(4))
+            setPadding(0, dp(4), 0, dp(3))
         }
 
         val detalhe = TextView(this).apply {
             text = "Melhor opção para deixar ativo por mais tempo."
-            textSize = 14f
+            textSize = 13f
             setTextColor(cinzaTexto)
         }
 
@@ -459,7 +459,7 @@ class MainActivity : Activity() {
         box.addView(nome)
         box.addView(preco)
         box.addView(detalhe)
-        box.addView(espaco(10))
+        box.addView(espaco(8))
         box.addView(botao)
 
         return box
@@ -472,17 +472,17 @@ class MainActivity : Activity() {
 
         val desc = TextView(this).apply {
             text = "A busca automática só libera com acesso ativo e acessibilidade ativada."
-            textSize = 14f
+            textSize = 13f
             setTextColor(cinzaTexto)
-            setPadding(0, dp(6), 0, dp(12))
-            setLineSpacing(dp(3).toFloat(), 1.0f)
+            setPadding(0, dp(5), 0, dp(10))
+            setLineSpacing(dp(2).toFloat(), 1.0f)
         }
 
         switchBusca = Switch(this).apply {
             text = "Ativar busca automática"
-            textSize = 18f
+            textSize = 17f
             setTextColor(preto99)
-            setPadding(0, dp(8), 0, dp(12))
+            setPadding(0, dp(6), 0, dp(10))
 
             setOnCheckedChangeListener { _, isChecked ->
                 alterarEstadoBusca(isChecked)
@@ -523,18 +523,18 @@ class MainActivity : Activity() {
 12. Abra a tela de horários da 99.
 13. Para parar, volte aqui e desligue.
             """.trimIndent()
-            textSize = 14f
+            textSize = 13f
             setTextColor(Color.parseColor("#444444"))
-            setLineSpacing(dp(4).toFloat(), 1.0f)
-            setPadding(0, dp(8), 0, 0)
+            setLineSpacing(dp(3).toFloat(), 1.0f)
+            setPadding(0, dp(6), 0, 0)
         }
 
         val dicaExtra = TextView(this).apply {
             text = "Dica: em alguns Androids, apps instalados fora da Play Store precisam da permissão de configurações restritas para liberar a acessibilidade."
-            textSize = 12f
+            textSize = 11f
             setTextColor(Color.parseColor("#777777"))
-            setPadding(0, dp(12), 0, 0)
-            setLineSpacing(dp(3).toFloat(), 1.0f)
+            setPadding(0, dp(10), 0, 0)
+            setLineSpacing(dp(2).toFloat(), 1.0f)
         }
 
         card.addView(titulo)
@@ -876,9 +876,9 @@ class MainActivity : Activity() {
     private fun criarCardBase(): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(16), dp(16), dp(16))
+            setPadding(dp(14), dp(14), dp(14), dp(14))
             background = GradientDrawable().apply {
-                cornerRadius = dp(22).toFloat()
+                cornerRadius = dp(20).toFloat()
                 setColor(Color.WHITE)
                 setStroke(dp(1), Color.parseColor("#E7E7E7"))
             }
@@ -888,7 +888,7 @@ class MainActivity : Activity() {
     private fun criarTitulo(texto: String): TextView {
         return TextView(this).apply {
             text = texto
-            textSize = 19f
+            textSize = 17f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
         }
@@ -907,7 +907,7 @@ class MainActivity : Activity() {
             ).apply {
                 cornerRadius = dp(16).toFloat()
             }
-            setPadding(dp(14), dp(12), dp(14), dp(12))
+            setPadding(dp(14), dp(11), dp(14), dp(11))
         }
     }
 
@@ -923,17 +923,17 @@ class MainActivity : Activity() {
                 setColor(Color.parseColor("#FFF7CC"))
                 setStroke(dp(1), amareloEscuro)
             }
-            setPadding(dp(14), dp(12), dp(14), dp(12))
+            setPadding(dp(14), dp(11), dp(14), dp(11))
         }
     }
 
     private fun criarBotaoSeletor(texto: String): Button {
         return Button(this).apply {
             text = texto
-            textSize = 16f
+            textSize = 15f
             isAllCaps = false
             setTypeface(null, Typeface.BOLD)
-            setPadding(dp(14), dp(12), dp(14), dp(12))
+            setPadding(dp(12), dp(11), dp(12), dp(11))
         }
     }
 
