@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">AgendaBot 99</string>
+
     <string name="accessibility_description">
-        Automatiza a verificação das três primeiras datas visíveis e clica quando o botão Quero me cadastrar estiver disponível.
+        Automatiza a verificação dos dias configurados e clica somente quando o botão amarelo Quero me cadastrar estiver disponível.
     </string>
 </resources>
