@@ -12,7 +12,6 @@ import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
 import android.util.TypedValue
-import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -25,7 +24,7 @@ import android.widget.Toast
 class MainActivity : Activity() {
 
     private lateinit var statusText: TextView
-    private lateinit var switchBot: Switch
+    private lateinit var switchBusca: Switch
     private lateinit var btn3Dias: Button
     private lateinit var btn7Dias: Button
 
@@ -48,6 +47,10 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (!prefs.contains("days_count")) {
+            prefs.edit().putInt("days_count", 3).apply()
+        }
 
         val scroll = ScrollView(this).apply {
             setBackgroundColor(fundoApp)
@@ -110,7 +113,7 @@ class MainActivity : Activity() {
         }
 
         val title = TextView(this).apply {
-            text = "AgendaBot 99"
+            text = "Vaga Fácil"
             textSize = 30f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
@@ -118,10 +121,10 @@ class MainActivity : Activity() {
         }
 
         val desc = TextView(this).apply {
-            text = "Automação para monitorar horários e pegar vaga quando o botão disponível aparecer."
+            text = "Monitore horários e pegue vaga quando o botão disponível aparecer."
             textSize = 15f
             setTextColor(Color.parseColor("#2A2A2A"))
-            lineSpacingExtra = dp(3).toFloat()
+            setLineSpacing(dp(3).toFloat(), 1.0f)
         }
 
         card.addView(badge)
@@ -135,11 +138,12 @@ class MainActivity : Activity() {
         val card = criarCardBase()
 
         val titulo = criarTitulo("Status")
+
         statusText = TextView(this).apply {
             textSize = 15f
             setTextColor(preto99)
             setPadding(0, dp(8), 0, 0)
-            lineSpacingExtra = dp(2).toFloat()
+            setLineSpacing(dp(2).toFloat(), 1.0f)
         }
 
         card.addView(titulo)
@@ -152,8 +156,9 @@ class MainActivity : Activity() {
         val card = criarCardBase()
 
         val titulo = criarTitulo("Modo de busca")
+
         val desc = TextView(this).apply {
-            text = "Escolha quantos dias o robô deve verificar em loop."
+            text = "Escolha quantos dias a busca deve verificar em loop."
             textSize = 14f
             setTextColor(cinzaTexto)
             setPadding(0, dp(6), 0, dp(12))
@@ -208,6 +213,7 @@ class MainActivity : Activity() {
         val card = criarCardBase()
 
         val titulo = criarTitulo("Planos")
+
         val desc = TextView(this).apply {
             text = "Escolha o plano e finalize pelo Mercado Pago."
             textSize = 14f
@@ -354,22 +360,23 @@ class MainActivity : Activity() {
     private fun criarCardControle(): View {
         val card = criarCardBase()
 
-        val titulo = criarTitulo("Controle do robô")
+        val titulo = criarTitulo("Controle da busca")
+
         val desc = TextView(this).apply {
-            text = "Ative a acessibilidade antes de ligar o robô."
+            text = "Ative a acessibilidade antes de ligar a busca automática."
             textSize = 14f
             setTextColor(cinzaTexto)
             setPadding(0, dp(6), 0, dp(12))
         }
 
-        switchBot = Switch(this).apply {
-            text = "Ativar robô"
+        switchBusca = Switch(this).apply {
+            text = "Ativar busca automática"
             textSize = 18f
             setTextColor(preto99)
             setPadding(0, dp(8), 0, dp(12))
 
             setOnCheckedChangeListener { _, isChecked ->
-                alterarEstadoBot(isChecked)
+                alterarEstadoBusca(isChecked)
             }
         }
 
@@ -380,7 +387,7 @@ class MainActivity : Activity() {
 
         card.addView(titulo)
         card.addView(desc)
-        card.addView(switchBot)
+        card.addView(switchBusca)
         card.addView(btnAccessibility)
 
         return card
@@ -390,18 +397,19 @@ class MainActivity : Activity() {
         val card = criarCardBase()
 
         val titulo = criarTitulo("Como usar")
+
         val texto = TextView(this).apply {
             text = """
-1. Ative a acessibilidade do AgendaBot 99.
+1. Ative a acessibilidade do Vaga Fácil.
 2. Escolha o modo: 3 dias ou 7 dias.
 3. Abra a tela de horários da 99.
-4. Ligue o robô.
-5. Ele procura botões amarelos disponíveis.
+4. Ligue a busca automática.
+5. O app procura botões amarelos disponíveis.
 6. Para parar, volte aqui e desligue.
             """.trimIndent()
             textSize = 14f
             setTextColor(Color.parseColor("#444444"))
-            lineSpacingExtra = dp(4).toFloat()
+            setLineSpacing(dp(4).toFloat(), 1.0f)
             setPadding(0, dp(8), 0, 0)
         }
 
@@ -411,7 +419,7 @@ class MainActivity : Activity() {
         return card
     }
 
-    private fun alterarEstadoBot(ativo: Boolean) {
+    private fun alterarEstadoBusca(ativo: Boolean) {
         if (ativo && !isAccessibilityEnabled()) {
             prefs.edit()
                 .putBoolean("robot_enabled", false)
@@ -437,25 +445,25 @@ class MainActivity : Activity() {
         if (ativo) {
             Toast.makeText(
                 this,
-                "Robô ligado. Abra a tela de horários.",
+                "Busca ligada. Abra a tela de horários.",
                 Toast.LENGTH_LONG
             ).show()
         } else {
-            Toast.makeText(this, "Robô desligado.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Busca desligada.", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun atualizarTela() {
         val acessibilidade = isAccessibilityEnabled()
-        val roboAtivo = prefs.getBoolean("robot_enabled", false)
+        val buscaAtiva = prefs.getBoolean("robot_enabled", false)
         val dias = prefs.getInt("days_count", 3)
 
         statusText.text = buildString {
             append("Acessibilidade: ")
             append(if (acessibilidade) "ativada" else "desativada")
             append("\n")
-            append("Robô: ")
-            append(if (roboAtivo && acessibilidade) "ligado" else "desligado")
+            append("Busca: ")
+            append(if (buscaAtiva && acessibilidade) "ligada" else "desligada")
             append("\n")
             append("Modo: ")
             append("$dias dias")
@@ -463,10 +471,12 @@ class MainActivity : Activity() {
             append("Intervalo: 3 segundos")
         }
 
-        switchBot.setOnCheckedChangeListener(null)
-        switchBot.isChecked = roboAtivo && acessibilidade
-        switchBot.setOnCheckedChangeListener { _, isChecked ->
-            alterarEstadoBot(isChecked)
+        if (::switchBusca.isInitialized) {
+            switchBusca.setOnCheckedChangeListener(null)
+            switchBusca.isChecked = buscaAtiva && acessibilidade
+            switchBusca.setOnCheckedChangeListener { _, isChecked ->
+                alterarEstadoBusca(isChecked)
+            }
         }
     }
 
@@ -485,6 +495,15 @@ class MainActivity : Activity() {
 
     private fun abrirLink(url: String) {
         try {
+            if (url.contains("SEU_LINK")) {
+                Toast.makeText(
+                    this,
+                    "Troque o link do Mercado Pago no código.",
+                    Toast.LENGTH_LONG
+                ).show()
+                return
+            }
+
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
         } catch (_: Exception) {
             Toast.makeText(this, "Não foi possível abrir o link.", Toast.LENGTH_SHORT).show()
