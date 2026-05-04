@@ -636,22 +636,33 @@ class AutoClickService : AccessibilityService() {
     private fun obterDatasConfiguradas(): List<Pair<Float, Float>> {
         val quantidadeDias = prefs.getInt("days_count", 3)
 
-        return if (quantidadeDias >= 7) {
-            listOf(
-                Pair(0.11f, 0.245f),
-                Pair(0.24f, 0.245f),
-                Pair(0.37f, 0.245f),
-                Pair(0.50f, 0.245f),
-                Pair(0.63f, 0.245f),
-                Pair(0.76f, 0.245f),
-                Pair(0.89f, 0.245f)
-            )
-        } else {
-            listOf(
-                Pair(0.11f, 0.245f),
-                Pair(0.24f, 0.245f),
-                Pair(0.37f, 0.245f)
-            )
+        return when {
+            quantidadeDias >= 7 -> {
+                listOf(
+                    Pair(0.11f, 0.245f), // 1ª data visível
+                    Pair(0.24f, 0.245f), // 2ª data visível
+                    Pair(0.37f, 0.245f), // 3ª data visível
+                    Pair(0.50f, 0.245f), // 4ª data visível
+                    Pair(0.63f, 0.245f), // 5ª data visível
+                    Pair(0.76f, 0.245f), // 6ª data visível
+                    Pair(0.89f, 0.245f)  // 7ª data visível
+                )
+            }
+
+            quantidadeDias == 2 -> {
+                listOf(
+                    Pair(0.11f, 0.245f), // 1ª data visível
+                    Pair(0.24f, 0.245f)  // 2ª data visível
+                )
+            }
+
+            else -> {
+                listOf(
+                    Pair(0.11f, 0.245f), // 1ª data visível
+                    Pair(0.24f, 0.245f), // 2ª data visível
+                    Pair(0.37f, 0.245f)  // 3ª data visível
+                )
+            }
         }
     }
 
