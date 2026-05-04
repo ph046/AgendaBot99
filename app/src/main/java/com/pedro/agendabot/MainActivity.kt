@@ -242,7 +242,7 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Ativação do acesso")
 
         val desc = TextView(this).apply {
-            text = "O modo 2 dias é grátis. Para liberar 3 dias e 7 dias, use o e-mail do pagamento e toque em Verificar pagamento."
+            text = "O modo 2 dias é grátis. Para liberar 3 dias ou 7 dias, use o e-mail do pagamento e toque em Verificar pagamento."
             textSize = 13f
             setTextColor(cinzaTexto)
             setPadding(0, dp(5), 0, dp(10))
@@ -299,7 +299,7 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Modo de busca")
 
         val desc = TextView(this).apply {
-            text = "2 dias é grátis. 3 dias e 7 dias fazem parte dos planos pagos."
+            text = "2 dias é grátis. 3 dias libera no Básico. 7 dias libera no Completo."
             textSize = 13f
             setTextColor(cinzaTexto)
             setPadding(0, dp(5), 0, dp(10))
@@ -321,10 +321,10 @@ class MainActivity : Activity() {
         }
 
         btn3Dias.setOnClickListener {
-            if (!acessoAtivoLocal()) {
+            if (!planoBasicoOuCompletoAtivo()) {
                 Toast.makeText(
                     this,
-                    "O modo 3 dias faz parte dos planos pagos. Use 2 dias grátis ou assine.",
+                    "O modo 3 dias faz parte do Plano Básico. Use 2 dias grátis ou assine por R$ 4,76/mês.",
                     Toast.LENGTH_LONG
                 ).show()
                 atualizarSeletorDias()
@@ -339,10 +339,10 @@ class MainActivity : Activity() {
         }
 
         btn7Dias.setOnClickListener {
-            if (!acessoAtivoLocal()) {
+            if (!planoCompletoAtivo()) {
                 Toast.makeText(
                     this,
-                    "O modo 7 dias faz parte dos planos pagos. Use 2 dias grátis ou assine.",
+                    "O modo 7 dias faz parte do Plano Completo. Assine por R$ 8,77/mês para liberar.",
                     Toast.LENGTH_LONG
                 ).show()
                 atualizarSeletorDias()
@@ -383,18 +383,18 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Planos")
 
         val desc = TextView(this).apply {
-            text = "Use grátis o modo 2 dias. Assine para liberar os modos 3 dias e 7 dias."
+            text = "Use grátis o modo 2 dias. Assine o Básico para liberar 3 dias ou o Completo para liberar 7 dias."
             textSize = 13f
             setTextColor(cinzaTexto)
             setPadding(0, dp(5), 0, dp(10))
             setLineSpacing(dp(2).toFloat(), 1.0f)
         }
 
-        val planoMensal = criarPlanoMensal()
-        val planoTrimestral = criarPlanoTrimestral()
+        val planoBasico = criarPlanoBasico()
+        val planoCompleto = criarPlanoCompleto()
 
         val aviso = TextView(this).apply {
-            text = "Após pagar, volte ao app e toque em Verificar pagamento para liberar os modos pagos."
+            text = "Após pagar, volte ao app e toque em Verificar pagamento para liberar o plano."
             textSize = 11f
             setTextColor(Color.parseColor("#777777"))
             setPadding(0, dp(8), 0, 0)
@@ -402,15 +402,15 @@ class MainActivity : Activity() {
 
         card.addView(titulo)
         card.addView(desc)
-        card.addView(planoMensal)
+        card.addView(planoBasico)
         card.addView(espaco(10))
-        card.addView(planoTrimestral)
+        card.addView(planoCompleto)
         card.addView(aviso)
 
         return card
     }
 
-    private fun criarPlanoMensal(): View {
+    private fun criarPlanoBasico(): View {
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(12), dp(12), dp(12))
@@ -422,14 +422,14 @@ class MainActivity : Activity() {
         }
 
         val nome = TextView(this).apply {
-            text = "Plano Mensal"
+            text = "Plano Básico"
             textSize = 17f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
         }
 
         val preco = TextView(this).apply {
-            text = "R$ 9,99/mês"
+            text = "R$ 4,76/mês"
             textSize = 24f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
@@ -437,14 +437,14 @@ class MainActivity : Activity() {
         }
 
         val detalhe = TextView(this).apply {
-            text = "Libera os modos 3 dias e 7 dias."
+            text = "Libera o modo 3 dias."
             textSize = 13f
             setTextColor(cinzaTexto)
         }
 
-        val botao = criarBotaoPrincipal("Assinar mensal")
+        val botao = criarBotaoPrincipal("Assinar básico")
         botao.setOnClickListener {
-            iniciarCheckout("mensal")
+            iniciarCheckout("basico")
         }
 
         box.addView(nome)
@@ -456,7 +456,7 @@ class MainActivity : Activity() {
         return box
     }
 
-    private fun criarPlanoTrimestral(): View {
+    private fun criarPlanoCompleto(): View {
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(12), dp(12), dp(12))
@@ -468,7 +468,7 @@ class MainActivity : Activity() {
         }
 
         val badge = TextView(this).apply {
-            text = "R$ 2,98 OFF"
+            text = "MAIS COMPLETO"
             textSize = 11f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
@@ -481,7 +481,7 @@ class MainActivity : Activity() {
         }
 
         val nome = TextView(this).apply {
-            text = "Plano Trimestral"
+            text = "Plano Completo"
             textSize = 17f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
@@ -489,7 +489,7 @@ class MainActivity : Activity() {
         }
 
         val preco = TextView(this).apply {
-            text = "R$ 26,99/trimestre"
+            text = "R$ 8,77/mês"
             textSize = 24f
             setTypeface(null, Typeface.BOLD)
             setTextColor(preto99)
@@ -497,14 +497,14 @@ class MainActivity : Activity() {
         }
 
         val detalhe = TextView(this).apply {
-            text = "Melhor opção para deixar os modos pagos ativos por mais tempo."
+            text = "Libera os modos 3 dias e 7 dias."
             textSize = 13f
             setTextColor(cinzaTexto)
         }
 
-        val botao = criarBotaoPrincipal("Assinar trimestral")
+        val botao = criarBotaoPrincipal("Assinar completo")
         botao.setOnClickListener {
-            iniciarCheckout("trimestral")
+            iniciarCheckout("completo")
         }
 
         box.addView(badge)
@@ -523,7 +523,7 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Controle da busca")
 
         val desc = TextView(this).apply {
-            text = "O modo 2 dias funciona grátis. Para 3 dias e 7 dias, é necessário acesso ativo."
+            text = "O modo 2 dias funciona grátis. O modo 3 dias exige Plano Básico. O modo 7 dias exige Plano Completo."
             textSize = 13f
             setTextColor(cinzaTexto)
             setPadding(0, dp(5), 0, dp(10))
@@ -562,18 +562,19 @@ class MainActivity : Activity() {
         val texto = TextView(this).apply {
             text = """
 1. O modo 2 dias pode ser usado grátis.
-2. Para liberar 3 dias e 7 dias, escolha um plano.
-3. Finalize o pagamento no Mercado Pago.
-4. Volte ao app e toque em Verificar pagamento.
-5. Se a acessibilidade não puder ser ativada, abra as informações do app VagaFacil.
-6. Toque no menu de 3 pontos no canto superior direito.
-7. Ative a opção "Permitir configurações restritas".
-8. Volte e abra a tela de acessibilidade.
-9. Ative o serviço do VagaFacil na acessibilidade.
-10. Escolha o modo: 2 dias, 3 dias ou 7 dias.
-11. Ligue a busca automática.
-12. Abra a tela de horários da 99.
-13. Para parar, volte aqui e desligue.
+2. Para liberar 3 dias, assine o Plano Básico.
+3. Para liberar 7 dias, assine o Plano Completo.
+4. Finalize o pagamento no Mercado Pago.
+5. Volte ao app e toque em Verificar pagamento.
+6. Se a acessibilidade não puder ser ativada, abra as informações do app VagaFacil.
+7. Toque no menu de 3 pontos no canto superior direito.
+8. Ative a opção "Permitir configurações restritas".
+9. Volte e abra a tela de acessibilidade.
+10. Ative o serviço do VagaFacil na acessibilidade.
+11. Escolha o modo: 2 dias, 3 dias ou 7 dias.
+12. Ligue a busca automática.
+13. Abra a tela de horários da 99.
+14. Para parar, volte aqui e desligue.
             """.trimIndent()
             textSize = 13f
             setTextColor(Color.parseColor("#444444"))
@@ -689,7 +690,7 @@ class MainActivity : Activity() {
                     atualizarTela()
 
                     if (active) {
-                        Toast.makeText(this, "Acesso pago liberado!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, "Plano liberado!", Toast.LENGTH_LONG).show()
                     } else {
                         Toast.makeText(
                             this,
@@ -763,9 +764,22 @@ class MainActivity : Activity() {
         val acessibilidade = isAccessibilityEnabled()
         var buscaAtiva = prefs.getBoolean("robot_enabled", false)
         var dias = prefs.getInt("days_count", 2)
-        val acessoAtivo = acessoAtivoLocal()
 
-        if (!acessoAtivo && dias != 2) {
+        val plano = planoAtualServidor()
+        val pagoAtivo = acessoAtivoLocal()
+        val basicoLiberado = planoBasicoOuCompletoAtivo()
+        val completoLiberado = planoCompletoAtivo()
+
+        if (dias >= 7 && !completoLiberado) {
+            dias = if (basicoLiberado) 3 else 2
+            buscaAtiva = false
+            prefs.edit()
+                .putInt("days_count", dias)
+                .putBoolean("robot_enabled", false)
+                .apply()
+        }
+
+        if (dias == 3 && !basicoLiberado) {
             dias = 2
             buscaAtiva = false
             prefs.edit()
@@ -774,8 +788,7 @@ class MainActivity : Activity() {
                 .apply()
         }
 
-        val acessoLiberado = dias == 2 || acessoAtivo
-        val plano = prefs.getString("license_plan", "none") ?: "none"
+        val acessoLiberado = acessoLiberadoParaModo()
         val status = prefs.getString("license_status", "not_found") ?: "not_found"
         val expira = prefs.getString("license_expires_at", "") ?: ""
 
@@ -786,7 +799,8 @@ class MainActivity : Activity() {
             append("Acesso: ")
             append(
                 when {
-                    acessoAtivo -> "pago ativo"
+                    completoLiberado -> "Plano Completo ativo"
+                    basicoLiberado -> "Plano Básico ativo"
                     dias == 2 -> "modo grátis"
                     else -> "inativo"
                 }
@@ -809,14 +823,10 @@ class MainActivity : Activity() {
 
         if (::acessoText.isInitialized) {
             acessoText.text = buildString {
-                append("Modo grátis: ")
-                append("2 dias liberado")
+                append("Modo grátis: 2 dias liberado")
                 append("\n")
                 append("Plano pago: ")
-                append(if (acessoAtivo) "ATIVO" else "INATIVO")
-                append("\n")
-                append("Plano: ")
-                append(plano)
+                append(if (pagoAtivo) nomePlanoPago(plano) else "INATIVO")
                 append("\n")
                 append("Status servidor: ")
                 append(status)
@@ -841,7 +851,58 @@ class MainActivity : Activity() {
 
     private fun acessoLiberadoParaModo(): Boolean {
         val dias = prefs.getInt("days_count", 2)
-        return dias == 2 || acessoAtivoLocal()
+
+        return when {
+            dias == 2 -> true
+            dias == 3 -> planoBasicoOuCompletoAtivo()
+            dias >= 7 -> planoCompletoAtivo()
+            else -> false
+        }
+    }
+
+    private fun planoAtualServidor(): String {
+        return (prefs.getString("license_plan", "none") ?: "none")
+            .trim()
+            .lowercase()
+    }
+
+    private fun planoBasicoOuCompletoAtivo(): Boolean {
+        if (!acessoAtivoLocal()) return false
+
+        return when (planoAtualServidor()) {
+            "basico" -> true
+            "completo" -> true
+
+            // Compatibilidade com plano antigo, caso algum usuário antigo ainda tenha salvo.
+            "mensal" -> true
+            "trimestral" -> true
+
+            else -> false
+        }
+    }
+
+    private fun planoCompletoAtivo(): Boolean {
+        if (!acessoAtivoLocal()) return false
+
+        return when (planoAtualServidor()) {
+            "completo" -> true
+
+            // Compatibilidade com plano antigo.
+            "mensal" -> true
+            "trimestral" -> true
+
+            else -> false
+        }
+    }
+
+    private fun nomePlanoPago(plano: String): String {
+        return when (plano) {
+            "basico" -> "Plano Básico"
+            "completo" -> "Plano Completo"
+            "mensal" -> "Plano Completo antigo"
+            "trimestral" -> "Plano Completo antigo"
+            else -> "ATIVO"
+        }
     }
 
     private fun acessoAtivoLocal(): Boolean {
