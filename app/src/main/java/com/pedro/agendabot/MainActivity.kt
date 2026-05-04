@@ -63,7 +63,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         if (!prefs.contains("days_count")) {
-            prefs.edit().putInt("days_count", 3).apply()
+            prefs.edit().putInt("days_count", 2).apply()
         }
 
         pedirPermissaoNotificacao()
@@ -242,7 +242,7 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Ativação do acesso")
 
         val desc = TextView(this).apply {
-            text = "Digite o e-mail usado no pagamento. Depois de pagar, volte aqui e toque em Verificar pagamento."
+            text = "O modo 2 dias é grátis. Para liberar 3 dias e 7 dias, use o e-mail do pagamento e toque em Verificar pagamento."
             textSize = 13f
             setTextColor(cinzaTexto)
             setPadding(0, dp(5), 0, dp(10))
@@ -299,7 +299,7 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Modo de busca")
 
         val desc = TextView(this).apply {
-            text = "Escolha quantos dias a busca deve verificar em loop."
+            text = "2 dias é grátis. 3 dias e 7 dias fazem parte dos planos pagos."
             textSize = 13f
             setTextColor(cinzaTexto)
             setPadding(0, dp(5), 0, dp(10))
@@ -317,10 +317,21 @@ class MainActivity : Activity() {
             prefs.edit().putInt("days_count", 2).apply()
             atualizarSeletorDias()
             atualizarTela()
-            Toast.makeText(this, "Modo 2 dias selecionado.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Modo 2 dias grátis selecionado.", Toast.LENGTH_SHORT).show()
         }
 
         btn3Dias.setOnClickListener {
+            if (!acessoAtivoLocal()) {
+                Toast.makeText(
+                    this,
+                    "O modo 3 dias faz parte dos planos pagos. Use 2 dias grátis ou assine.",
+                    Toast.LENGTH_LONG
+                ).show()
+                atualizarSeletorDias()
+                atualizarTela()
+                return@setOnClickListener
+            }
+
             prefs.edit().putInt("days_count", 3).apply()
             atualizarSeletorDias()
             atualizarTela()
@@ -328,6 +339,17 @@ class MainActivity : Activity() {
         }
 
         btn7Dias.setOnClickListener {
+            if (!acessoAtivoLocal()) {
+                Toast.makeText(
+                    this,
+                    "O modo 7 dias faz parte dos planos pagos. Use 2 dias grátis ou assine.",
+                    Toast.LENGTH_LONG
+                ).show()
+                atualizarSeletorDias()
+                atualizarTela()
+                return@setOnClickListener
+            }
+
             prefs.edit().putInt("days_count", 7).apply()
             atualizarSeletorDias()
             atualizarTela()
@@ -361,7 +383,7 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Planos")
 
         val desc = TextView(this).apply {
-            text = "Escolha seu plano. O pagamento será gerado automaticamente para o e-mail informado."
+            text = "Use grátis o modo 2 dias. Assine para liberar os modos 3 dias e 7 dias."
             textSize = 13f
             setTextColor(cinzaTexto)
             setPadding(0, dp(5), 0, dp(10))
@@ -372,7 +394,7 @@ class MainActivity : Activity() {
         val planoTrimestral = criarPlanoTrimestral()
 
         val aviso = TextView(this).apply {
-            text = "Após pagar, volte ao app e toque em Verificar pagamento para liberar a busca."
+            text = "Após pagar, volte ao app e toque em Verificar pagamento para liberar os modos pagos."
             textSize = 11f
             setTextColor(Color.parseColor("#777777"))
             setPadding(0, dp(8), 0, 0)
@@ -415,7 +437,7 @@ class MainActivity : Activity() {
         }
 
         val detalhe = TextView(this).apply {
-            text = "Acesso mensal para usar a busca automática."
+            text = "Libera os modos 3 dias e 7 dias."
             textSize = 13f
             setTextColor(cinzaTexto)
         }
@@ -475,7 +497,7 @@ class MainActivity : Activity() {
         }
 
         val detalhe = TextView(this).apply {
-            text = "Melhor opção para deixar ativo por mais tempo."
+            text = "Melhor opção para deixar os modos pagos ativos por mais tempo."
             textSize = 13f
             setTextColor(cinzaTexto)
         }
@@ -501,7 +523,7 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Controle da busca")
 
         val desc = TextView(this).apply {
-            text = "A busca automática só libera com acesso ativo e acessibilidade ativada."
+            text = "O modo 2 dias funciona grátis. Para 3 dias e 7 dias, é necessário acesso ativo."
             textSize = 13f
             setTextColor(cinzaTexto)
             setPadding(0, dp(5), 0, dp(10))
@@ -539,8 +561,8 @@ class MainActivity : Activity() {
 
         val texto = TextView(this).apply {
             text = """
-1. Digite o e-mail que vai usar no pagamento.
-2. Escolha o plano mensal ou trimestral.
+1. O modo 2 dias pode ser usado grátis.
+2. Para liberar 3 dias e 7 dias, escolha um plano.
 3. Finalize o pagamento no Mercado Pago.
 4. Volte ao app e toque em Verificar pagamento.
 5. Se a acessibilidade não puder ser ativada, abra as informações do app VagaFacil.
@@ -549,7 +571,7 @@ class MainActivity : Activity() {
 8. Volte e abra a tela de acessibilidade.
 9. Ative o serviço do VagaFacil na acessibilidade.
 10. Escolha o modo: 2 dias, 3 dias ou 7 dias.
-11. Com acesso ativo, ligue a busca automática.
+11. Ligue a busca automática.
 12. Abra a tela de horários da 99.
 13. Para parar, volte aqui e desligue.
             """.trimIndent()
@@ -667,11 +689,11 @@ class MainActivity : Activity() {
                     atualizarTela()
 
                     if (active) {
-                        Toast.makeText(this, "Acesso liberado!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, "Acesso pago liberado!", Toast.LENGTH_LONG).show()
                     } else {
                         Toast.makeText(
                             this,
-                            "Pagamento ainda não liberado. Status: $status",
+                            "Pagamento ainda não liberado. O modo 2 dias continua grátis.",
                             Toast.LENGTH_LONG
                         ).show()
                     }
@@ -689,14 +711,14 @@ class MainActivity : Activity() {
     }
 
     private fun alterarEstadoBusca(ativo: Boolean) {
-        if (ativo && !acessoAtivoLocal()) {
+        if (ativo && !acessoLiberadoParaModo()) {
             prefs.edit()
                 .putBoolean("robot_enabled", false)
                 .apply()
 
             Toast.makeText(
                 this,
-                "Acesso inativo. Assine ou toque em Verificar pagamento.",
+                "Este modo precisa de plano ativo. Use 2 dias grátis ou assine.",
                 Toast.LENGTH_LONG
             ).show()
 
@@ -739,9 +761,20 @@ class MainActivity : Activity() {
 
     private fun atualizarTela() {
         val acessibilidade = isAccessibilityEnabled()
-        val buscaAtiva = prefs.getBoolean("robot_enabled", false)
-        val dias = prefs.getInt("days_count", 3)
+        var buscaAtiva = prefs.getBoolean("robot_enabled", false)
+        var dias = prefs.getInt("days_count", 2)
         val acessoAtivo = acessoAtivoLocal()
+
+        if (!acessoAtivo && dias != 2) {
+            dias = 2
+            buscaAtiva = false
+            prefs.edit()
+                .putInt("days_count", 2)
+                .putBoolean("robot_enabled", false)
+                .apply()
+        }
+
+        val acessoLiberado = dias == 2 || acessoAtivo
         val plano = prefs.getString("license_plan", "none") ?: "none"
         val status = prefs.getString("license_status", "not_found") ?: "not_found"
         val expira = prefs.getString("license_expires_at", "") ?: ""
@@ -751,15 +784,21 @@ class MainActivity : Activity() {
             append(if (acessibilidade) "ativada" else "desativada")
             append("\n")
             append("Acesso: ")
-            append(if (acessoAtivo) "ativo" else "inativo")
+            append(
+                when {
+                    acessoAtivo -> "pago ativo"
+                    dias == 2 -> "modo grátis"
+                    else -> "inativo"
+                }
+            )
             append("\n")
             append("Busca: ")
-            append(if (buscaAtiva && acessibilidade && acessoAtivo) "ligada" else "desligada")
+            append(if (buscaAtiva && acessibilidade && acessoLiberado) "ligada" else "desligada")
             append("\n")
             append("Modo: ")
             append(
                 when (dias) {
-                    2 -> "2 dias"
+                    2 -> "2 dias grátis"
                     3 -> "3 dias"
                     else -> "7 dias"
                 }
@@ -770,7 +809,10 @@ class MainActivity : Activity() {
 
         if (::acessoText.isInitialized) {
             acessoText.text = buildString {
-                append("Status do plano: ")
+                append("Modo grátis: ")
+                append("2 dias liberado")
+                append("\n")
+                append("Plano pago: ")
                 append(if (acessoAtivo) "ATIVO" else "INATIVO")
                 append("\n")
                 append("Plano: ")
@@ -785,20 +827,21 @@ class MainActivity : Activity() {
                 }
             }
 
-            acessoText.setTextColor(if (acessoAtivo) verdeDesconto else vermelhoErro)
+            acessoText.setTextColor(if (acessoLiberado) verdeDesconto else vermelhoErro)
         }
 
         if (::switchBusca.isInitialized) {
             switchBusca.setOnCheckedChangeListener(null)
-            switchBusca.isChecked = buscaAtiva && acessibilidade && acessoAtivo
+            switchBusca.isChecked = buscaAtiva && acessibilidade && acessoLiberado
             switchBusca.setOnCheckedChangeListener { _, isChecked ->
                 alterarEstadoBusca(isChecked)
             }
         }
+    }
 
-        if (!acessoAtivo && buscaAtiva) {
-            prefs.edit().putBoolean("robot_enabled", false).apply()
-        }
+    private fun acessoLiberadoParaModo(): Boolean {
+        val dias = prefs.getInt("days_count", 2)
+        return dias == 2 || acessoAtivoLocal()
     }
 
     private fun acessoAtivoLocal(): Boolean {
@@ -816,7 +859,7 @@ class MainActivity : Activity() {
     }
 
     private fun atualizarSeletorDias() {
-        val dias = prefs.getInt("days_count", 3)
+        val dias = prefs.getInt("days_count", 2)
 
         if (::btn2Dias.isInitialized && ::btn3Dias.isInitialized && ::btn7Dias.isInitialized) {
             aplicarEstiloSeletor(btn2Dias, dias == 2)
