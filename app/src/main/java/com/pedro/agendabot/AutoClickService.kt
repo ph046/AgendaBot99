@@ -42,34 +42,54 @@ class AutoClickService : AccessibilityService() {
     private val notificationChannelId = "vaga_facil_vagas"
     private val notificationId = 9901
 
+    private val maxTextosPorTela = 250
+    private val maxCandidatosPorTela = 40
+
     private val prefs by lazy {
         getSharedPreferences("bot_config", Context.MODE_PRIVATE)
     }
 
     private val loop = object : Runnable {
         override fun run() {
-            executarCiclo()
+            executarCicloSeguro()
         }
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        criarCanalNotificacao()
-        iniciarLoopSePrecisar()
+
+        try {
+            criarCanalNotificacao()
+            iniciarLoopSePrecisar()
+        } catch (_: Exception) {
+            loopAtivo = false
+            screenshotEmAndamento = false
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        iniciarLoopSePrecisar()
+        try {
+            iniciarLoopSePrecisar()
+        } catch (_: Exception) {
+            loopAtivo = false
+            screenshotEmAndamento = false
+        }
     }
 
     override fun onInterrupt() {
-        // Nada aqui.
+        // Não derruba o app.
     }
 
     override fun onDestroy() {
-        handler.removeCallbacksAndMessages(null)
+        try {
+            handler.removeCallbacksAndMessages(null)
+        } catch (_: Exception) {
+            // Ignora.
+        }
+
         loopAtivo = false
         screenshotEmAndamento = false
+
         super.onDestroy()
     }
 
@@ -78,7 +98,22 @@ class AutoClickService : AccessibilityService() {
 
         if (!loopAtivo) {
             loopAtivo = true
+            handler.removeCallbacks(loop)
             handler.post(loop)
+        }
+    }
+
+    private fun executarCicloSeguro() {
+        try {
+            executarCiclo()
+        } catch (_: Exception) {
+            screenshotEmAndamento = false
+
+            if (roboLigado()) {
+                agendarProximoCiclo(3000)
+            } else {
+                loopAtivo = false
+            }
         }
     }
 
@@ -91,27 +126,53 @@ class AutoClickService : AccessibilityService() {
         }
 
         if (screenshotEmAndamento) {
-            handler.postDelayed(loop, 500)
+            agendarProximoCiclo(700)
             return
         }
 
-        val root = rootInActiveWindow
+        val root = try {
+            rootInActiveWindow
+        } catch (_: Exception) {
+            null
+        }
 
         if (root != null && telaCorreta(root)) {
             verificarBotoesAmarelos(root) { clicouEmAlgum ->
-                if (!clicouEmAlgum) {
-                    clicarProximaData()
+                try {
+                    if (!clicouEmAlgum) {
+                        clicarProximaData()
+                    }
+                } catch (_: Exception) {
+                    // Ignora erro no clique de data para não derrubar o serviço.
                 }
 
-                handler.postDelayed(loop, 3000)
+                agendarProximoCiclo(3000)
             }
         } else {
-            handler.postDelayed(loop, 3000)
+            agendarProximoCiclo(3000)
+        }
+    }
+
+    private fun agendarProximoCiclo(delay: Long) {
+        try {
+            if (roboLigado()) {
+                handler.postDelayed(loop, delay)
+            } else {
+                loopAtivo = false
+                screenshotEmAndamento = false
+            }
+        } catch (_: Exception) {
+            loopAtivo = false
+            screenshotEmAndamento = false
         }
     }
 
     private fun roboLigado(): Boolean {
-        return prefs.getBoolean("robot_enabled", false) && acessoAtivoLocal()
+        return try {
+            prefs.getBoolean("robot_enabled", false) && acessoAtivoLocal()
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun acessoAtivoLocal(): Boolean {
@@ -129,33 +190,69 @@ class AutoClickService : AccessibilityService() {
     }
 
     private fun desligarRoboLocal() {
-        prefs.edit()
-            .putBoolean("robot_enabled", false)
-            .apply()
+        try {
+            prefs.edit()
+                .putBoolean("robot_enabled", false)
+                .apply()
+        } catch (_: Exception) {
+            // Ignora.
+        }
     }
 
     private fun telaCorreta(root: AccessibilityNodeInfo): Boolean {
-        val textos = mutableListOf<String>()
-        coletarTextos(root, textos)
+        return try {
+            val textos = mutableListOf<String>()
+            coletarTextos(root, textos)
 
-        val textoTela = limparTexto(textos.joinToString(" "))
+            val textoTela = limparTexto(textos.joinToString(" "))
 
-        val temHorarioAberto = textoTela.contains("horarios abertos")
-        val temBotao = textoTela.contains("quero me cadastrar")
-        val temPausa = textoTela.contains("pausa")
-        val temAgendamento = textoTela.contains("agendamento")
+            val temHorarioAberto = textoTela.contains("horarios abertos")
+            val temBotao = textoTela.contains("quero me cadastrar")
+            val temPausa = textoTela.contains("pausa")
+            val temAgendamento = textoTela.contains("agendamento")
 
-        return temHorarioAberto || (temBotao && temPausa) || temAgendamento
+            temHorarioAberto || (temBotao && temPausa) || temAgendamento
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun coletarTextos(node: AccessibilityNodeInfo?, lista: MutableList<String>) {
         if (node == null) return
+        if (lista.size >= maxTextosPorTela) return
 
-        node.text?.toString()?.let { lista.add(it) }
-        node.contentDescription?.toString()?.let { lista.add(it) }
+        try {
+            node.text?.toString()?.let {
+                if (it.isNotBlank() && lista.size < maxTextosPorTela) {
+                    lista.add(it)
+                }
+            }
 
-        for (i in 0 until node.childCount) {
-            coletarTextos(node.getChild(i), lista)
+            node.contentDescription?.toString()?.let {
+                if (it.isNotBlank() && lista.size < maxTextosPorTela) {
+                    lista.add(it)
+                }
+            }
+        } catch (_: Exception) {
+            // Ignora texto problemático.
+        }
+
+        val filhos = try {
+            node.childCount
+        } catch (_: Exception) {
+            0
+        }
+
+        for (i in 0 until filhos) {
+            if (lista.size >= maxTextosPorTela) return
+
+            val child = try {
+                node.getChild(i)
+            } catch (_: Exception) {
+                null
+            }
+
+            coletarTextos(child, lista)
         }
     }
 
@@ -163,74 +260,100 @@ class AutoClickService : AccessibilityService() {
         root: AccessibilityNodeInfo,
         finalizar: (Boolean) -> Unit
     ) {
-        val candidatos = mutableListOf<Rect>()
-        coletarBotoesCandidatos(root, candidatos)
+        try {
+            val candidatos = mutableListOf<Rect>()
+            coletarBotoesCandidatos(root, candidatos)
 
-        val candidatosUnicos = limparDuplicados(candidatos)
+            val candidatosUnicos = limparDuplicados(candidatos)
 
-        if (candidatosUnicos.isEmpty()) {
-            finalizar(false)
-            return
-        }
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            finalizar(false)
-            return
-        }
-
-        screenshotEmAndamento = true
-
-        takeScreenshot(
-            Display.DEFAULT_DISPLAY,
-            mainExecutor,
-            object : AccessibilityService.TakeScreenshotCallback {
-
-                override fun onSuccess(screenshot: AccessibilityService.ScreenshotResult) {
-                    try {
-                        val hardwareBitmap = Bitmap.wrapHardwareBuffer(
-                            screenshot.hardwareBuffer,
-                            screenshot.colorSpace
-                        )
-
-                        val bitmap = hardwareBitmap?.copy(Bitmap.Config.ARGB_8888, false)
-
-                        screenshot.hardwareBuffer.close()
-
-                        if (bitmap == null) {
-                            screenshotEmAndamento = false
-                            finalizar(false)
-                            return
-                        }
-
-                        val botoesAmarelos = candidatosUnicos.filter { rect ->
-                            botaoEstaAmarelo(bitmap, rect)
-                        }
-
-                        bitmap.recycle()
-
-                        if (botoesAmarelos.isNotEmpty()) {
-                            clicarTodosOsBotoes(botoesAmarelos) {
-                                vibrar()
-                                enviarNotificacaoVagaPegada()
-                                screenshotEmAndamento = false
-                                finalizar(true)
-                            }
-                        } else {
-                            screenshotEmAndamento = false
-                            finalizar(false)
-                        }
-                    } catch (_: Exception) {
-                        screenshotEmAndamento = false
-                        finalizar(false)
-                    }
-                }
-
-                override fun onFailure(errorCode: Int) {
-                    screenshotEmAndamento = false
-                    finalizar(false)
-                }
+            if (candidatosUnicos.isEmpty()) {
+                finalizar(false)
+                return
             }
-        )
+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                finalizar(false)
+                return
+            }
+
+            screenshotEmAndamento = true
+
+            try {
+                takeScreenshot(
+                    Display.DEFAULT_DISPLAY,
+                    mainExecutor,
+                    object : AccessibilityService.TakeScreenshotCallback {
+
+                        override fun onSuccess(screenshot: AccessibilityService.ScreenshotResult) {
+                            var bitmap: Bitmap? = null
+
+                            try {
+                                val hardwareBitmap = Bitmap.wrapHardwareBuffer(
+                                    screenshot.hardwareBuffer,
+                                    screenshot.colorSpace
+                                )
+
+                                bitmap = hardwareBitmap?.copy(Bitmap.Config.ARGB_8888, false)
+
+                                try {
+                                    screenshot.hardwareBuffer.close()
+                                } catch (_: Exception) {
+                                    // Ignora.
+                                }
+
+                                if (bitmap == null) {
+                                    screenshotEmAndamento = false
+                                    finalizar(false)
+                                    return
+                                }
+
+                                val botoesAmarelos = candidatosUnicos.filter { rect ->
+                                    botaoEstaAmarelo(bitmap!!, rect)
+                                }
+
+                                if (botoesAmarelos.isNotEmpty()) {
+                                    clicarTodosOsBotoes(botoesAmarelos) {
+                                        vibrar()
+                                        enviarNotificacaoVagaPegada()
+                                        screenshotEmAndamento = false
+                                        finalizar(true)
+                                    }
+                                } else {
+                                    screenshotEmAndamento = false
+                                    finalizar(false)
+                                }
+                            } catch (_: Exception) {
+                                screenshotEmAndamento = false
+                                finalizar(false)
+                            } finally {
+                                try {
+                                    bitmap?.recycle()
+                                } catch (_: Exception) {
+                                    // Ignora.
+                                }
+
+                                try {
+                                    screenshot.hardwareBuffer.close()
+                                } catch (_: Exception) {
+                                    // Ignora se já fechou.
+                                }
+                            }
+                        }
+
+                        override fun onFailure(errorCode: Int) {
+                            screenshotEmAndamento = false
+                            finalizar(false)
+                        }
+                    }
+                )
+            } catch (_: Exception) {
+                screenshotEmAndamento = false
+                finalizar(false)
+            }
+        } catch (_: Exception) {
+            screenshotEmAndamento = false
+            finalizar(false)
+        }
     }
 
     private fun coletarBotoesCandidatos(
@@ -238,28 +361,56 @@ class AutoClickService : AccessibilityService() {
         lista: MutableList<Rect>
     ) {
         if (node == null) return
+        if (lista.size >= maxCandidatosPorTela) return
 
-        val texto = limparTexto(node.text?.toString() ?: "")
-        val desc = limparTexto(node.contentDescription?.toString() ?: "")
+        try {
+            val texto = limparTexto(node.text?.toString() ?: "")
+            val desc = limparTexto(node.contentDescription?.toString() ?: "")
 
-        if (texto.contains("quero me cadastrar") || desc.contains("quero me cadastrar")) {
-            val alvo = acharPaiClicavel(node) ?: node
+            if (texto.contains("quero me cadastrar") || desc.contains("quero me cadastrar")) {
+                val alvo = acharPaiClicavel(node) ?: node
 
-            val rect = Rect()
-            alvo.getBoundsInScreen(rect)
+                val rect = Rect()
 
-            if (rect.width() <= 0 || rect.height() <= 0) {
-                node.getBoundsInScreen(rect)
+                try {
+                    alvo.getBoundsInScreen(rect)
+                } catch (_: Exception) {
+                    // Ignora.
+                }
+
+                if (rect.width() <= 0 || rect.height() <= 0) {
+                    try {
+                        node.getBoundsInScreen(rect)
+                    } catch (_: Exception) {
+                        // Ignora.
+                    }
+                }
+
+                if (rect.width() > 0 && rect.height() > 0) {
+                    val expandido = expandirAreaDoBotao(rect)
+                    lista.add(expandido)
+                }
             }
-
-            if (rect.width() > 0 && rect.height() > 0) {
-                val expandido = expandirAreaDoBotao(rect)
-                lista.add(expandido)
-            }
+        } catch (_: Exception) {
+            // Ignora nó problemático.
         }
 
-        for (i in 0 until node.childCount) {
-            coletarBotoesCandidatos(node.getChild(i), lista)
+        val filhos = try {
+            node.childCount
+        } catch (_: Exception) {
+            0
+        }
+
+        for (i in 0 until filhos) {
+            if (lista.size >= maxCandidatosPorTela) return
+
+            val child = try {
+                node.getChild(i)
+            } catch (_: Exception) {
+                null
+            }
+
+            coletarBotoesCandidatos(child, lista)
         }
     }
 
@@ -267,13 +418,17 @@ class AutoClickService : AccessibilityService() {
         var atual = node
 
         repeat(8) {
-            if (atual == null) return null
+            try {
+                if (atual == null) return null
 
-            if (atual!!.isClickable && atual!!.isEnabled) {
-                return atual
+                if (atual!!.isClickable && atual!!.isEnabled) {
+                    return atual
+                }
+
+                atual = atual!!.parent
+            } catch (_: Exception) {
+                return null
             }
-
-            atual = atual!!.parent
         }
 
         return null
@@ -302,43 +457,47 @@ class AutoClickService : AccessibilityService() {
     }
 
     private fun botaoEstaAmarelo(bitmap: Bitmap, rectOriginal: Rect): Boolean {
-        val rect = Rect(
-            rectOriginal.left.coerceAtLeast(0),
-            rectOriginal.top.coerceAtLeast(0),
-            rectOriginal.right.coerceAtMost(bitmap.width - 1),
-            rectOriginal.bottom.coerceAtMost(bitmap.height - 1)
-        )
+        return try {
+            val rect = Rect(
+                rectOriginal.left.coerceAtLeast(0),
+                rectOriginal.top.coerceAtLeast(0),
+                rectOriginal.right.coerceAtMost(bitmap.width - 1),
+                rectOriginal.bottom.coerceAtMost(bitmap.height - 1)
+            )
 
-        if (rect.width() <= 0 || rect.height() <= 0) return false
+            if (rect.width() <= 0 || rect.height() <= 0) return false
 
-        var total = 0
-        var amarelos = 0
+            var total = 0
+            var amarelos = 0
 
-        val step = max(3, min(rect.width(), rect.height()) / 14)
+            val step = max(3, min(rect.width(), rect.height()) / 14)
 
-        var y = rect.top
-        while (y < rect.bottom) {
-            var x = rect.left
-            while (x < rect.right) {
-                val pixel = bitmap.getPixel(x, y)
+            var y = rect.top
+            while (y < rect.bottom) {
+                var x = rect.left
+                while (x < rect.right) {
+                    val pixel = bitmap.getPixel(x, y)
 
-                total++
+                    total++
 
-                if (pixelEhAmarelo(pixel)) {
-                    amarelos++
+                    if (pixelEhAmarelo(pixel)) {
+                        amarelos++
+                    }
+
+                    x += step
                 }
 
-                x += step
+                y += step
             }
 
-            y += step
+            if (total == 0) return false
+
+            val proporcao = amarelos.toFloat() / total.toFloat()
+
+            amarelos >= 8 && proporcao >= 0.04f
+        } catch (_: Exception) {
+            false
         }
-
-        if (total == 0) return false
-
-        val proporcao = amarelos.toFloat() / total.toFloat()
-
-        return amarelos >= 8 && proporcao >= 0.04f
     }
 
     private fun pixelEhAmarelo(pixel: Int): Boolean {
@@ -373,21 +532,33 @@ class AutoClickService : AccessibilityService() {
         }
 
         var delay = 0L
+        var jaFinalizou = false
+
+        fun finalizarUmaVez() {
+            if (!jaFinalizou) {
+                jaFinalizou = true
+                finalizar()
+            }
+        }
 
         ordenados.forEachIndexed { index, rect ->
             handler.postDelayed({
-                if (!roboLigado()) {
-                    finalizar()
-                    return@postDelayed
-                }
+                try {
+                    if (!roboLigado()) {
+                        finalizarUmaVez()
+                        return@postDelayed
+                    }
 
-                clicarNaTela(
-                    rect.centerX().toFloat(),
-                    rect.centerY().toFloat()
-                )
+                    clicarNaTela(
+                        rect.centerX().toFloat(),
+                        rect.centerY().toFloat()
+                    )
 
-                if (index == ordenados.lastIndex) {
-                    finalizar()
+                    if (index == ordenados.lastIndex) {
+                        finalizarUmaVez()
+                    }
+                } catch (_: Exception) {
+                    finalizarUmaVez()
                 }
             }, delay)
 
@@ -485,21 +656,25 @@ class AutoClickService : AccessibilityService() {
     }
 
     private fun clicarNaTela(x: Float, y: Float) {
-        val path = Path().apply {
-            moveTo(x, y)
-        }
+        try {
+            val path = Path().apply {
+                moveTo(x, y)
+            }
 
-        val gesture = GestureDescription.Builder()
-            .addStroke(
-                GestureDescription.StrokeDescription(
-                    path,
-                    0,
-                    80
+            val gesture = GestureDescription.Builder()
+                .addStroke(
+                    GestureDescription.StrokeDescription(
+                        path,
+                        0,
+                        80
+                    )
                 )
-            )
-            .build()
+                .build()
 
-        dispatchGesture(gesture, null, null)
+            dispatchGesture(gesture, null, null)
+        } catch (_: Exception) {
+            // Ignora erro de clique para não derrubar o serviço.
+        }
     }
 
     private fun vibrar() {
@@ -594,7 +769,7 @@ class AutoClickService : AccessibilityService() {
             )
 
             val titulo = "Vaga encontrada!"
-            val mensagem = "O Vaga Fácil clicou em um horário disponível. Confira a tela da 99."
+            val mensagem = "O Vaga Fácil clicou em um horário disponível. Confira a tela da 99Food."
 
             val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Notification.Builder(this, notificationChannelId)
