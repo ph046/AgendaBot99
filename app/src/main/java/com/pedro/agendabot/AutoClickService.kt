@@ -240,7 +240,48 @@ class AutoClickService : AccessibilityService() {
 
     private fun acessoLiberadoParaModo(): Boolean {
         val dias = prefs.getInt("days_count", 2)
-        return dias == 2 || acessoAtivoLocal()
+
+        return when {
+            dias == 2 -> true
+            dias == 3 -> planoBasicoOuCompletoAtivo()
+            dias >= 7 -> planoCompletoAtivo()
+            else -> false
+        }
+    }
+
+    private fun planoAtualServidor(): String {
+        return (prefs.getString("license_plan", "none") ?: "none")
+            .trim()
+            .lowercase(Locale.ROOT)
+    }
+
+    private fun planoBasicoOuCompletoAtivo(): Boolean {
+        if (!acessoAtivoLocal()) return false
+
+        return when (planoAtualServidor()) {
+            "basico" -> true
+            "completo" -> true
+
+            // Compatibilidade com planos antigos.
+            "mensal" -> true
+            "trimestral" -> true
+
+            else -> false
+        }
+    }
+
+    private fun planoCompletoAtivo(): Boolean {
+        if (!acessoAtivoLocal()) return false
+
+        return when (planoAtualServidor()) {
+            "completo" -> true
+
+            // Compatibilidade com planos antigos.
+            "mensal" -> true
+            "trimestral" -> true
+
+            else -> false
+        }
     }
 
     private fun acessoAtivoLocal(): Boolean {
