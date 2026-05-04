@@ -232,10 +232,15 @@ class AutoClickService : AccessibilityService() {
 
     private fun roboLigado(): Boolean {
         return try {
-            prefs.getBoolean("robot_enabled", false) && acessoAtivoLocal()
+            prefs.getBoolean("robot_enabled", false) && acessoLiberadoParaModo()
         } catch (_: Exception) {
             false
         }
+    }
+
+    private fun acessoLiberadoParaModo(): Boolean {
+        val dias = prefs.getInt("days_count", 2)
+        return dias == 2 || acessoAtivoLocal()
     }
 
     private fun acessoAtivoLocal(): Boolean {
@@ -725,7 +730,7 @@ class AutoClickService : AccessibilityService() {
     }
 
     private fun obterDatasConfiguradas(): List<Pair<Float, Float>> {
-        val quantidadeDias = prefs.getInt("days_count", 3)
+        val quantidadeDias = prefs.getInt("days_count", 2)
 
         return when {
             quantidadeDias >= 7 -> {
