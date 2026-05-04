@@ -41,6 +41,7 @@ class MainActivity : Activity() {
     private lateinit var acessoText: TextView
     private lateinit var emailInput: EditText
     private lateinit var switchBusca: Switch
+    private lateinit var btn2Dias: Button
     private lateinit var btn3Dias: Button
     private lateinit var btn7Dias: Button
 
@@ -308,14 +309,22 @@ class MainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
         }
 
-        btn3Dias = criarBotaoSeletor("3 dias (OL)")
+        btn2Dias = criarBotaoSeletor("2 dias")
+        btn3Dias = criarBotaoSeletor("3 dias")
         btn7Dias = criarBotaoSeletor("7 dias")
+
+        btn2Dias.setOnClickListener {
+            prefs.edit().putInt("days_count", 2).apply()
+            atualizarSeletorDias()
+            atualizarTela()
+            Toast.makeText(this, "Modo 2 dias selecionado.", Toast.LENGTH_SHORT).show()
+        }
 
         btn3Dias.setOnClickListener {
             prefs.edit().putInt("days_count", 3).apply()
             atualizarSeletorDias()
             atualizarTela()
-            Toast.makeText(this, "Modo 3 dias (OL) selecionado.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Modo 3 dias selecionado.", Toast.LENGTH_SHORT).show()
         }
 
         btn7Dias.setOnClickListener {
@@ -326,13 +335,18 @@ class MainActivity : Activity() {
         }
 
         val lp1 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-            marginEnd = dp(8)
+            marginEnd = dp(6)
         }
 
-        val lp2 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        val lp2 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+            marginEnd = dp(6)
+        }
 
-        linha.addView(btn3Dias, lp1)
-        linha.addView(btn7Dias, lp2)
+        val lp3 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+
+        linha.addView(btn2Dias, lp1)
+        linha.addView(btn3Dias, lp2)
+        linha.addView(btn7Dias, lp3)
 
         card.addView(titulo)
         card.addView(desc)
@@ -534,7 +548,7 @@ class MainActivity : Activity() {
 7. Ative a opção "Permitir configurações restritas".
 8. Volte e abra a tela de acessibilidade.
 9. Ative o serviço do VagaFacil na acessibilidade.
-10. Escolha o modo: 3 dias (OL) ou 7 dias.
+10. Escolha o modo: 2 dias, 3 dias ou 7 dias.
 11. Com acesso ativo, ligue a busca automática.
 12. Abra a tela de horários da 99.
 13. Para parar, volte aqui e desligue.
@@ -743,7 +757,13 @@ class MainActivity : Activity() {
             append(if (buscaAtiva && acessibilidade && acessoAtivo) "ligada" else "desligada")
             append("\n")
             append("Modo: ")
-            append(if (dias == 3) "3 dias (OL)" else "7 dias")
+            append(
+                when (dias) {
+                    2 -> "2 dias"
+                    3 -> "3 dias"
+                    else -> "7 dias"
+                }
+            )
             append("\n")
             append("Intervalo: 3 segundos")
         }
@@ -798,7 +818,8 @@ class MainActivity : Activity() {
     private fun atualizarSeletorDias() {
         val dias = prefs.getInt("days_count", 3)
 
-        if (::btn3Dias.isInitialized && ::btn7Dias.isInitialized) {
+        if (::btn2Dias.isInitialized && ::btn3Dias.isInitialized && ::btn7Dias.isInitialized) {
+            aplicarEstiloSeletor(btn2Dias, dias == 2)
             aplicarEstiloSeletor(btn3Dias, dias == 3)
             aplicarEstiloSeletor(btn7Dias, dias == 7)
         }
@@ -946,10 +967,10 @@ class MainActivity : Activity() {
     private fun criarBotaoSeletor(texto: String): Button {
         return Button(this).apply {
             text = texto
-            textSize = 15f
+            textSize = 14f
             isAllCaps = false
             setTypeface(null, Typeface.BOLD)
-            setPadding(dp(12), dp(11), dp(12), dp(11))
+            setPadding(dp(8), dp(11), dp(8), dp(11))
         }
     }
 
