@@ -39,11 +39,21 @@ class AutoClickService : AccessibilityService() {
     private var screenshotEmAndamento = false
     private var ultimaNotificacao = 0L
 
+    private var screenshotToken = 0L
+    private var ultimoInicioScreenshot = 0L
+    private var ultimoCicloExecutado = 0L
+    private var watchdogAtivo = false
+
     private val notificationChannelId = "vaga_facil_vagas"
     private val notificationId = 9901
 
     private val maxTextosPorTela = 250
     private val maxCandidatosPorTela = 40
+
+    private val intervaloLoopMs = 3000L
+    private val screenshotTimeoutMs = 8000L
+    private val watchdogIntervalMs = 5000L
+    private val maxTempoSemCicloMs = 12000L
 
     private val prefs by lazy {
         getSharedPreferences("bot_config", Context.MODE_PRIVATE)
@@ -52,6 +62,36 @@ class AutoClickService : AccessibilityService() {
     private val loop = object : Runnable {
         override fun run() {
             executarCicloSeguro()
+        }
+    }
+
+    private val watchdog = object : Runnable {
+        override fun run() {
+            try {
+                if (!roboLigado()) {
+                    watchdogAtivo = false
+                    screenshotEmAndamento = false
+                    loopAtivo = false
+                    return
+                }
+
+                val agora = System.currentTimeMillis()
+
+                if (screenshotEmAndamento && agora - ultimoInicioScreenshot > screenshotTimeoutMs) {
+                    screenshotEmAndamento = false
+                }
+
+                if (loopAtivo && ultimoCicloExecutado > 0 && agora - ultimoCicloExecutado > maxTempoSemCicloMs) {
+                    screenshotEmAndamento = false
+                    handler.removeCallbacks(loop)
+                    handler.post(loop)
+                }
+
+                handler.postDelayed(this, watchdogIntervalMs)
+            } catch (_: Exception) {
+                watchdogAtivo = false
+                screenshotEmAndamento = false
+            }
         }
     }
 
@@ -88,6 +128,7 @@ class AutoClickService : AccessibilityService() {
         }
 
         loopAtivo = false
+        watchdogAtivo = false
         screenshotEmAndamento = false
 
         super.onDestroy()
@@ -96,6 +137,8 @@ class AutoClickService : AccessibilityService() {
     private fun iniciarLoopSePrecisar() {
         if (!roboLigado()) return
 
+        iniciarWatchdogSePrecisar()
+
         if (!loopAtivo) {
             loopAtivo = true
             handler.removeCallbacks(loop)
@@ -103,14 +146,23 @@ class AutoClickService : AccessibilityService() {
         }
     }
 
+    private fun iniciarWatchdogSePrecisar() {
+        if (!watchdogAtivo) {
+            watchdogAtivo = true
+            handler.removeCallbacks(watchdog)
+            handler.postDelayed(watchdog, watchdogIntervalMs)
+        }
+    }
+
     private fun executarCicloSeguro() {
         try {
+            ultimoCicloExecutado = System.currentTimeMillis()
             executarCiclo()
         } catch (_: Exception) {
             screenshotEmAndamento = false
 
             if (roboLigado()) {
-                agendarProximoCiclo(3000)
+                agendarProximoCiclo(intervaloLoopMs)
             } else {
                 loopAtivo = false
             }
@@ -125,9 +177,17 @@ class AutoClickService : AccessibilityService() {
             return
         }
 
+        iniciarWatchdogSePrecisar()
+
         if (screenshotEmAndamento) {
-            agendarProximoCiclo(700)
-            return
+            val agora = System.currentTimeMillis()
+
+            if (agora - ultimoInicioScreenshot > screenshotTimeoutMs) {
+                screenshotEmAndamento = false
+            } else {
+                agendarProximoCiclo(700)
+                return
+            }
         }
 
         val root = try {
@@ -146,16 +206,19 @@ class AutoClickService : AccessibilityService() {
                     // Ignora erro no clique de data para não derrubar o serviço.
                 }
 
-                agendarProximoCiclo(3000)
+                agendarProximoCiclo(intervaloLoopMs)
             }
         } else {
-            agendarProximoCiclo(3000)
+            agendarProximoCiclo(intervaloLoopMs)
         }
     }
 
     private fun agendarProximoCiclo(delay: Long) {
         try {
             if (roboLigado()) {
+                loopAtivo = true
+                iniciarWatchdogSePrecisar()
+                handler.removeCallbacks(loop)
                 handler.postDelayed(loop, delay)
             } else {
                 loopAtivo = false
@@ -260,6 +323,21 @@ class AutoClickService : AccessibilityService() {
         root: AccessibilityNodeInfo,
         finalizar: (Boolean) -> Unit
     ) {
+        var finalizou = false
+
+        fun finalizarSeguro(clicou: Boolean) {
+            if (finalizou) return
+
+            finalizou = true
+            screenshotEmAndamento = false
+
+            try {
+                finalizar(clicou)
+            } catch (_: Exception) {
+                agendarProximoCiclo(intervaloLoopMs)
+            }
+        }
+
         try {
             val candidatos = mutableListOf<Rect>()
             coletarBotoesCandidatos(root, candidatos)
@@ -267,16 +345,26 @@ class AutoClickService : AccessibilityService() {
             val candidatosUnicos = limparDuplicados(candidatos)
 
             if (candidatosUnicos.isEmpty()) {
-                finalizar(false)
+                finalizarSeguro(false)
                 return
             }
 
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-                finalizar(false)
+                finalizarSeguro(false)
                 return
             }
 
             screenshotEmAndamento = true
+            ultimoInicioScreenshot = System.currentTimeMillis()
+            screenshotToken = ultimoInicioScreenshot
+
+            val tokenAtual = screenshotToken
+
+            handler.postDelayed({
+                if (!finalizou && screenshotEmAndamento && screenshotToken == tokenAtual) {
+                    finalizarSeguro(false)
+                }
+            }, screenshotTimeoutMs)
 
             try {
                 takeScreenshot(
@@ -286,8 +374,26 @@ class AutoClickService : AccessibilityService() {
 
                         override fun onSuccess(screenshot: AccessibilityService.ScreenshotResult) {
                             var bitmap: Bitmap? = null
+                            var bufferFechado = false
+
+                            fun fecharBuffer() {
+                                if (!bufferFechado) {
+                                    try {
+                                        screenshot.hardwareBuffer.close()
+                                    } catch (_: Exception) {
+                                        // Ignora.
+                                    }
+
+                                    bufferFechado = true
+                                }
+                            }
 
                             try {
+                                if (finalizou || screenshotToken != tokenAtual) {
+                                    fecharBuffer()
+                                    return
+                                }
+
                                 val hardwareBitmap = Bitmap.wrapHardwareBuffer(
                                     screenshot.hardwareBuffer,
                                     screenshot.colorSpace
@@ -295,15 +401,10 @@ class AutoClickService : AccessibilityService() {
 
                                 bitmap = hardwareBitmap?.copy(Bitmap.Config.ARGB_8888, false)
 
-                                try {
-                                    screenshot.hardwareBuffer.close()
-                                } catch (_: Exception) {
-                                    // Ignora.
-                                }
+                                fecharBuffer()
 
                                 if (bitmap == null) {
-                                    screenshotEmAndamento = false
-                                    finalizar(false)
+                                    finalizarSeguro(false)
                                     return
                                 }
 
@@ -315,16 +416,13 @@ class AutoClickService : AccessibilityService() {
                                     clicarTodosOsBotoes(botoesAmarelos) {
                                         vibrar()
                                         enviarNotificacaoVagaPegada()
-                                        screenshotEmAndamento = false
-                                        finalizar(true)
+                                        finalizarSeguro(true)
                                     }
                                 } else {
-                                    screenshotEmAndamento = false
-                                    finalizar(false)
+                                    finalizarSeguro(false)
                                 }
                             } catch (_: Exception) {
-                                screenshotEmAndamento = false
-                                finalizar(false)
+                                finalizarSeguro(false)
                             } finally {
                                 try {
                                     bitmap?.recycle()
@@ -332,27 +430,20 @@ class AutoClickService : AccessibilityService() {
                                     // Ignora.
                                 }
 
-                                try {
-                                    screenshot.hardwareBuffer.close()
-                                } catch (_: Exception) {
-                                    // Ignora se já fechou.
-                                }
+                                fecharBuffer()
                             }
                         }
 
                         override fun onFailure(errorCode: Int) {
-                            screenshotEmAndamento = false
-                            finalizar(false)
+                            finalizarSeguro(false)
                         }
                     }
                 )
             } catch (_: Exception) {
-                screenshotEmAndamento = false
-                finalizar(false)
+                finalizarSeguro(false)
             }
         } catch (_: Exception) {
-            screenshotEmAndamento = false
-            finalizar(false)
+            finalizarSeguro(false)
         }
     }
 
@@ -639,28 +730,28 @@ class AutoClickService : AccessibilityService() {
         return when {
             quantidadeDias >= 7 -> {
                 listOf(
-                    Pair(0.11f, 0.245f), // 1ª data visível
-                    Pair(0.24f, 0.245f), // 2ª data visível
-                    Pair(0.37f, 0.245f), // 3ª data visível
-                    Pair(0.50f, 0.245f), // 4ª data visível
-                    Pair(0.63f, 0.245f), // 5ª data visível
-                    Pair(0.76f, 0.245f), // 6ª data visível
-                    Pair(0.89f, 0.245f)  // 7ª data visível
+                    Pair(0.11f, 0.245f),
+                    Pair(0.24f, 0.245f),
+                    Pair(0.37f, 0.245f),
+                    Pair(0.50f, 0.245f),
+                    Pair(0.63f, 0.245f),
+                    Pair(0.76f, 0.245f),
+                    Pair(0.89f, 0.245f)
                 )
             }
 
             quantidadeDias == 2 -> {
                 listOf(
-                    Pair(0.11f, 0.245f), // 1ª data visível
-                    Pair(0.24f, 0.245f)  // 2ª data visível
+                    Pair(0.11f, 0.245f),
+                    Pair(0.24f, 0.245f)
                 )
             }
 
             else -> {
                 listOf(
-                    Pair(0.11f, 0.245f), // 1ª data visível
-                    Pair(0.24f, 0.245f), // 2ª data visível
-                    Pair(0.37f, 0.245f)  // 3ª data visível
+                    Pair(0.11f, 0.245f),
+                    Pair(0.24f, 0.245f),
+                    Pair(0.37f, 0.245f)
                 )
             }
         }
