@@ -1,0 +1,78 @@
+name: Build Release APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.7
+
+      - name: Aceitar licenças Android
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: Instalar SDK Android
+        run: $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Criar arquivo da keystore
+        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > release.jks
+
+      - name: Gerar APK release
+        run: |
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+            ./gradlew assembleRelease
+          else
+            gradle assembleRelease
+          fi
+
+      - name: Assinar APK release
+        env:
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          set -e
+
+          UNSIGNED_APK=$(find . -path "*/build/outputs/apk/release/*-release-unsigned.apk" | head -n 1)
+
+          if [ -z "$UNSIGNED_APK" ]; then
+            UNSIGNED_APK=$(find . -path "*/build/outputs/apk/release/*-release.apk" | head -n 1)
+          fi
+
+          echo "APK encontrado: $UNSIGNED_APK"
+
+          ZIPALIGN=$(find "$ANDROID_HOME/build-tools" -name zipalign | sort | tail -n 1)
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort | tail -n 1)
+
+          "$ZIPALIGN" -p -f 4 "$UNSIGNED_APK" app-release-aligned.apk
+
+          "$APKSIGNER" sign \
+            --ks release.jks \
+            --ks-key-alias "$RELEASE_KEY_ALIAS" \
+            --ks-pass "pass:$RELEASE_KEYSTORE_PASSWORD" \
+            --key-pass "pass:$RELEASE_KEY_PASSWORD" \
+            --out app-release.apk \
+            app-release-aligned.apk
+
+          "$APKSIGNER" verify --verbose app-release.apk
+
+      - name: Enviar APK release
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: app-release.apk
