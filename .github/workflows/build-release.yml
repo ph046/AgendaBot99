@@ -20,6 +20,7 @@ jobs:
       - name: Configurar Gradle sem cache
         uses: gradle/actions/setup-gradle@v3
         with:
+          gradle-version: 8.7
           cache-disabled: true
 
       - name: Aceitar licenças Android
@@ -30,15 +31,19 @@ jobs:
 
       - name: Criar arquivo da keystore
         env:
-          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEYSTORE_HEX: ${{ secrets.RELEASE_KEYSTORE_HEX }}
         run: |
-          printf '%s' "$KEYSTORE_BASE64" | tr -d '\n\r ' | base64 -d > release.jks
+          printf '%s' "$KEYSTORE_HEX" | tr -d '\n\r ' | xxd -r -p > release.jks
           ls -lh release.jks
 
       - name: Gerar APK release
         run: |
-          chmod +x ./gradlew
-          ./gradlew clean assembleRelease --no-daemon --stacktrace
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+            ./gradlew clean assembleRelease --no-daemon --stacktrace
+          else
+            gradle clean assembleRelease --no-daemon --stacktrace
+          fi
 
       - name: Assinar APK release
         env:
