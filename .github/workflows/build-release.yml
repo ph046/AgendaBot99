@@ -17,10 +17,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Configurar Gradle
+      - name: Configurar Gradle sem cache
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: 8.7
+          cache-disabled: true
 
       - name: Aceitar licenças Android
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
@@ -33,12 +33,8 @@ jobs:
 
       - name: Gerar APK release
         run: |
-          if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
-            ./gradlew assembleRelease
-          else
-            gradle assembleRelease
-          fi
+          chmod +x ./gradlew
+          ./gradlew clean assembleRelease --no-daemon --stacktrace
 
       - name: Assinar APK release
         env:
@@ -52,6 +48,12 @@ jobs:
 
           if [ -z "$UNSIGNED_APK" ]; then
             UNSIGNED_APK=$(find . -path "*/build/outputs/apk/release/*-release.apk" | head -n 1)
+          fi
+
+          if [ -z "$UNSIGNED_APK" ]; then
+            echo "Nenhum APK release encontrado."
+            find . -path "*/build/outputs/apk/*" -type f
+            exit 1
           fi
 
           echo "APK encontrado: $UNSIGNED_APK"
