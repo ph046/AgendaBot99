@@ -20,7 +20,7 @@ jobs:
       - name: Configurar Gradle sem cache
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: 8.7
+          gradle-version: 8.10.2
           cache-disabled: true
 
       - name: Aceitar licenças Android
@@ -76,14 +76,4 @@ jobs:
             --ks release.jks \
             --ks-key-alias "$RELEASE_KEY_ALIAS" \
             --ks-pass "pass:$RELEASE_KEYSTORE_PASSWORD" \
-            --key-pass "pass:$RELEASE_KEY_PASSWORD" \
-            --out app-release.apk \
-            app-release-aligned.apk
-
-          "$APKSIGNER" verify --verbose app-release.apk
-
-      - name: Enviar APK release
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: app-release.apk
+            --key
