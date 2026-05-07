@@ -50,7 +50,10 @@ class AutoClickService : AccessibilityService() {
     private val maxTextosPorTela = 250
     private val maxCandidatosPorTela = 40
 
-    private val intervaloLoopMs = 3000L
+    // Velocidade atualizada para 1,7 segundos.
+    private val intervaloLoopMs = 1700L
+
+    // Anti-travamento mantido.
     private val screenshotTimeoutMs = 8000L
     private val watchdogIntervalMs = 5000L
     private val maxTempoSemCicloMs = 12000L
@@ -185,7 +188,7 @@ class AutoClickService : AccessibilityService() {
             if (agora - ultimoInicioScreenshot > screenshotTimeoutMs) {
                 screenshotEmAndamento = false
             } else {
-                agendarProximoCiclo(700)
+                agendarProximoCiclo(500)
                 return
             }
         }
@@ -244,6 +247,7 @@ class AutoClickService : AccessibilityService() {
         return when {
             dias == 2 -> true
             dias == 3 -> planoBasicoOuCompletoAtivo()
+            dias == 4 -> planoBasicoOuCompletoAtivo()
             dias >= 7 -> planoCompletoAtivo()
             else -> false
         }
@@ -699,7 +703,7 @@ class AutoClickService : AccessibilityService() {
                 }
             }, delay)
 
-            delay += 600L
+            delay += 500L
         }
     }
 
@@ -740,7 +744,7 @@ class AutoClickService : AccessibilityService() {
     private fun clicarProximaData() {
         val agora = System.currentTimeMillis()
 
-        if (agora - ultimoCliqueData < 2500) return
+        if (agora - ultimoCliqueData < 1200) return
 
         ultimoCliqueData = agora
 
@@ -786,18 +790,27 @@ class AutoClickService : AccessibilityService() {
                 )
             }
 
-            quantidadeDias == 2 -> {
+            quantidadeDias == 4 -> {
                 listOf(
                     Pair(0.11f, 0.245f),
-                    Pair(0.24f, 0.245f)
+                    Pair(0.24f, 0.245f),
+                    Pair(0.37f, 0.245f),
+                    Pair(0.50f, 0.245f)
+                )
+            }
+
+            quantidadeDias == 3 -> {
+                listOf(
+                    Pair(0.11f, 0.245f),
+                    Pair(0.24f, 0.245f),
+                    Pair(0.37f, 0.245f)
                 )
             }
 
             else -> {
                 listOf(
                     Pair(0.11f, 0.245f),
-                    Pair(0.24f, 0.245f),
-                    Pair(0.37f, 0.245f)
+                    Pair(0.24f, 0.245f)
                 )
             }
         }
