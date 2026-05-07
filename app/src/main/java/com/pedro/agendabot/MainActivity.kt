@@ -43,6 +43,7 @@ class MainActivity : Activity() {
     private lateinit var switchBusca: Switch
     private lateinit var btn2Dias: Button
     private lateinit var btn3Dias: Button
+    private lateinit var btn4Dias: Button
     private lateinit var btn7Dias: Button
 
     private val prefs by lazy {
@@ -242,7 +243,7 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Ativação do acesso")
 
         val desc = TextView(this).apply {
-            text = "O modo 2 dias é grátis. Para liberar 3 dias ou 7 dias, use o e-mail do pagamento e toque em Verificar pagamento."
+            text = "O modo 2 dias é grátis. Para liberar 3, 4 ou 7 dias, use o e-mail do pagamento e toque em Verificar pagamento."
             textSize = 13f
             setTextColor(cinzaTexto)
             setPadding(0, dp(5), 0, dp(10))
@@ -299,18 +300,24 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Modo de busca")
 
         val desc = TextView(this).apply {
-            text = "2 dias é grátis. 3 dias libera no Básico. 7 dias libera no Completo."
+            text = "2 dias é grátis. 3 e 4 dias liberam no Básico. 7 dias libera no Completo."
             textSize = 13f
             setTextColor(cinzaTexto)
             setPadding(0, dp(5), 0, dp(10))
         }
 
-        val linha = LinearLayout(this).apply {
+        val linha1 = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
+        }
+
+        val linha2 = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(8), 0, 0)
         }
 
         btn2Dias = criarBotaoSeletor("2 dias")
         btn3Dias = criarBotaoSeletor("3 dias")
+        btn4Dias = criarBotaoSeletor("4 dias")
         btn7Dias = criarBotaoSeletor("7 dias")
 
         btn2Dias.setOnClickListener {
@@ -338,6 +345,24 @@ class MainActivity : Activity() {
             Toast.makeText(this, "Modo 3 dias selecionado.", Toast.LENGTH_SHORT).show()
         }
 
+        btn4Dias.setOnClickListener {
+            if (!planoBasicoOuCompletoAtivo()) {
+                Toast.makeText(
+                    this,
+                    "O modo 4 dias faz parte do Plano Básico. Use 2 dias grátis ou assine por R$ 4,76/mês.",
+                    Toast.LENGTH_LONG
+                ).show()
+                atualizarSeletorDias()
+                atualizarTela()
+                return@setOnClickListener
+            }
+
+            prefs.edit().putInt("days_count", 4).apply()
+            atualizarSeletorDias()
+            atualizarTela()
+            Toast.makeText(this, "Modo 4 dias selecionado.", Toast.LENGTH_SHORT).show()
+        }
+
         btn7Dias.setOnClickListener {
             if (!planoCompletoAtivo()) {
                 Toast.makeText(
@@ -360,19 +385,23 @@ class MainActivity : Activity() {
             marginEnd = dp(6)
         }
 
-        val lp2 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+        val lp2 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+
+        val lp3 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
             marginEnd = dp(6)
         }
 
-        val lp3 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        val lp4 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
 
-        linha.addView(btn2Dias, lp1)
-        linha.addView(btn3Dias, lp2)
-        linha.addView(btn7Dias, lp3)
+        linha1.addView(btn2Dias, lp1)
+        linha1.addView(btn3Dias, lp2)
+        linha2.addView(btn4Dias, lp3)
+        linha2.addView(btn7Dias, lp4)
 
         card.addView(titulo)
         card.addView(desc)
-        card.addView(linha)
+        card.addView(linha1)
+        card.addView(linha2)
 
         return card
     }
@@ -383,7 +412,7 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Planos")
 
         val desc = TextView(this).apply {
-            text = "Use grátis o modo 2 dias. Assine o Básico para liberar 3 dias ou o Completo para liberar 7 dias."
+            text = "Use grátis o modo 2 dias. Assine o Básico para liberar 3 e 4 dias ou o Completo para liberar 7 dias."
             textSize = 13f
             setTextColor(cinzaTexto)
             setPadding(0, dp(5), 0, dp(10))
@@ -437,7 +466,7 @@ class MainActivity : Activity() {
         }
 
         val detalhe = TextView(this).apply {
-            text = "Libera o modo 3 dias."
+            text = "Libera os modos 3 e 4 dias."
             textSize = 13f
             setTextColor(cinzaTexto)
         }
@@ -497,7 +526,7 @@ class MainActivity : Activity() {
         }
 
         val detalhe = TextView(this).apply {
-            text = "Libera os modos 3 dias e 7 dias."
+            text = "Libera os modos 3, 4 e 7 dias."
             textSize = 13f
             setTextColor(cinzaTexto)
         }
@@ -523,7 +552,7 @@ class MainActivity : Activity() {
         val titulo = criarTitulo("Controle da busca")
 
         val desc = TextView(this).apply {
-            text = "O modo 2 dias funciona grátis. O modo 3 dias exige Plano Básico. O modo 7 dias exige Plano Completo."
+            text = "O modo 2 dias funciona grátis. Os modos 3 e 4 dias exigem Plano Básico. O modo 7 dias exige Plano Completo."
             textSize = 13f
             setTextColor(cinzaTexto)
             setPadding(0, dp(5), 0, dp(10))
@@ -562,7 +591,7 @@ class MainActivity : Activity() {
         val texto = TextView(this).apply {
             text = """
 1. O modo 2 dias pode ser usado grátis.
-2. Para liberar 3 dias, assine o Plano Básico.
+2. Para liberar 3 e 4 dias, assine o Plano Básico.
 3. Para liberar 7 dias, assine o Plano Completo.
 4. Finalize o pagamento no Mercado Pago.
 5. Volte ao app e toque em Verificar pagamento.
@@ -571,7 +600,7 @@ class MainActivity : Activity() {
 8. Ative a opção "Permitir configurações restritas".
 9. Volte e abra a tela de acessibilidade.
 10. Ative o serviço do VagaFacil na acessibilidade.
-11. Escolha o modo: 2 dias, 3 dias ou 7 dias.
+11. Escolha o modo: 2 dias, 3 dias, 4 dias ou 7 dias.
 12. Ligue a busca automática.
 13. Abra a tela de horários da 99.
 14. Para parar, volte aqui e desligue.
@@ -771,10 +800,19 @@ class MainActivity : Activity() {
         val completoLiberado = planoCompletoAtivo()
 
         if (dias >= 7 && !completoLiberado) {
-            dias = if (basicoLiberado) 3 else 2
+            dias = if (basicoLiberado) 4 else 2
             buscaAtiva = false
             prefs.edit()
                 .putInt("days_count", dias)
+                .putBoolean("robot_enabled", false)
+                .apply()
+        }
+
+        if (dias == 4 && !basicoLiberado) {
+            dias = 2
+            buscaAtiva = false
+            prefs.edit()
+                .putInt("days_count", 2)
                 .putBoolean("robot_enabled", false)
                 .apply()
         }
@@ -814,11 +852,12 @@ class MainActivity : Activity() {
                 when (dias) {
                     2 -> "2 dias grátis"
                     3 -> "3 dias"
+                    4 -> "4 dias"
                     else -> "7 dias"
                 }
             )
             append("\n")
-            append("Intervalo: 3 segundos")
+            append("Intervalo: 1,7 segundos")
         }
 
         if (::acessoText.isInitialized) {
@@ -855,6 +894,7 @@ class MainActivity : Activity() {
         return when {
             dias == 2 -> true
             dias == 3 -> planoBasicoOuCompletoAtivo()
+            dias == 4 -> planoBasicoOuCompletoAtivo()
             dias >= 7 -> planoCompletoAtivo()
             else -> false
         }
@@ -922,9 +962,15 @@ class MainActivity : Activity() {
     private fun atualizarSeletorDias() {
         val dias = prefs.getInt("days_count", 2)
 
-        if (::btn2Dias.isInitialized && ::btn3Dias.isInitialized && ::btn7Dias.isInitialized) {
+        if (
+            ::btn2Dias.isInitialized &&
+            ::btn3Dias.isInitialized &&
+            ::btn4Dias.isInitialized &&
+            ::btn7Dias.isInitialized
+        ) {
             aplicarEstiloSeletor(btn2Dias, dias == 2)
             aplicarEstiloSeletor(btn3Dias, dias == 3)
+            aplicarEstiloSeletor(btn4Dias, dias == 4)
             aplicarEstiloSeletor(btn7Dias, dias == 7)
         }
     }
