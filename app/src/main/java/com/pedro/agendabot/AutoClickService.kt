@@ -50,8 +50,8 @@ class AutoClickService : AccessibilityService() {
     private val maxTextosPorTela = 250
     private val maxCandidatosPorTela = 40
 
-    // Velocidade atualizada para 1,7 segundos.
-    private val intervaloLoopMs = 1700L
+    // Velocidade atualizada para 1,2 segundos.
+    private val intervaloLoopMs = 1200L
 
     // Anti-travamento mantido.
     private val screenshotTimeoutMs = 8000L
@@ -188,7 +188,7 @@ class AutoClickService : AccessibilityService() {
             if (agora - ultimoInicioScreenshot > screenshotTimeoutMs) {
                 screenshotEmAndamento = false
             } else {
-                agendarProximoCiclo(500)
+                agendarProximoCiclo(300)
                 return
             }
         }
@@ -265,11 +265,8 @@ class AutoClickService : AccessibilityService() {
         return when (planoAtualServidor()) {
             "basico" -> true
             "completo" -> true
-
-            // Compatibilidade com planos antigos.
             "mensal" -> true
             "trimestral" -> true
-
             else -> false
         }
     }
@@ -279,11 +276,8 @@ class AutoClickService : AccessibilityService() {
 
         return when (planoAtualServidor()) {
             "completo" -> true
-
-            // Compatibilidade com planos antigos.
             "mensal" -> true
             "trimestral" -> true
-
             else -> false
         }
     }
@@ -703,7 +697,7 @@ class AutoClickService : AccessibilityService() {
                 }
             }, delay)
 
-            delay += 500L
+            delay += 300L
         }
     }
 
@@ -744,7 +738,7 @@ class AutoClickService : AccessibilityService() {
     private fun clicarProximaData() {
         val agora = System.currentTimeMillis()
 
-        if (agora - ultimoCliqueData < 1200) return
+        if (agora - ultimoCliqueData < 800) return
 
         ultimoCliqueData = agora
 
