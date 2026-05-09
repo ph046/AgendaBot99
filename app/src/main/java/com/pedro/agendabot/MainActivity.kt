@@ -857,7 +857,7 @@ class MainActivity : Activity() {
                 }
             )
             append("\n")
-            append("Intervalo: 1,7 segundos")
+            append("Intervalo: 1,2 segundos")
         }
 
         if (::acessoText.isInitialized) {
@@ -912,11 +912,8 @@ class MainActivity : Activity() {
         return when (planoAtualServidor()) {
             "basico" -> true
             "completo" -> true
-
-            // Compatibilidade com plano antigo, caso algum usuário antigo ainda tenha salvo.
             "mensal" -> true
             "trimestral" -> true
-
             else -> false
         }
     }
@@ -926,11 +923,8 @@ class MainActivity : Activity() {
 
         return when (planoAtualServidor()) {
             "completo" -> true
-
-            // Compatibilidade com plano antigo.
             "mensal" -> true
             "trimestral" -> true
-
             else -> false
         }
     }
