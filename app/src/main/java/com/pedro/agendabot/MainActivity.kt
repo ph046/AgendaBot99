@@ -45,6 +45,9 @@ class MainActivity : Activity() {
     private lateinit var btn3Dias: Button
     private lateinit var btn4Dias: Button
     private lateinit var btn7Dias: Button
+    private lateinit var btnSpeed09: Button
+    private lateinit var btnSpeed10: Button
+    private lateinit var btnSpeed12: Button
 
     private val prefs by lazy {
         getSharedPreferences("bot_config", Context.MODE_PRIVATE)
@@ -65,6 +68,10 @@ class MainActivity : Activity() {
 
         if (!prefs.contains("days_count")) {
             prefs.edit().putInt("days_count", 2).apply()
+        }
+
+        if (!prefs.contains("speed_interval_ms")) {
+            prefs.edit().putLong("speed_interval_ms", 1200L).apply()
         }
 
         pedirPermissaoNotificacao()
@@ -92,6 +99,8 @@ class MainActivity : Activity() {
         root.addView(espaco(10))
         root.addView(criarCardDias())
         root.addView(espaco(10))
+        root.addView(criarCardVelocidade())
+        root.addView(espaco(10))
         root.addView(criarCardControle())
         root.addView(espaco(10))
         root.addView(criarCardStatus())
@@ -105,6 +114,7 @@ class MainActivity : Activity() {
         super.onResume()
         atualizarTela()
         atualizarSeletorDias()
+        atualizarSeletorVelocidade()
     }
 
     private fun pedirPermissaoNotificacao() {
@@ -406,6 +416,69 @@ class MainActivity : Activity() {
         return card
     }
 
+    private fun criarCardVelocidade(): View {
+        val card = criarCardBase()
+
+        val titulo = criarTitulo("Velocidade da busca")
+
+        val desc = TextView(this).apply {
+            text = "Escolha a velocidade do robô. Turbo é mais rápido, mas pode exigir celular/internet mais estáveis."
+            textSize = 13f
+            setTextColor(cinzaTexto)
+            setPadding(0, dp(5), 0, dp(10))
+            setLineSpacing(dp(2).toFloat(), 1.0f)
+        }
+
+        val linha = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        btnSpeed09 = criarBotaoSeletor("0,9s\nTurbo")
+        btnSpeed10 = criarBotaoSeletor("1,0s\nRápido")
+        btnSpeed12 = criarBotaoSeletor("1,2s\nSeguro")
+
+        btnSpeed09.setOnClickListener {
+            prefs.edit().putLong("speed_interval_ms", 900L).apply()
+            atualizarSeletorVelocidade()
+            atualizarTela()
+            Toast.makeText(this, "Velocidade Turbo selecionada: 0,9s.", Toast.LENGTH_SHORT).show()
+        }
+
+        btnSpeed10.setOnClickListener {
+            prefs.edit().putLong("speed_interval_ms", 1000L).apply()
+            atualizarSeletorVelocidade()
+            atualizarTela()
+            Toast.makeText(this, "Velocidade Rápida selecionada: 1,0s.", Toast.LENGTH_SHORT).show()
+        }
+
+        btnSpeed12.setOnClickListener {
+            prefs.edit().putLong("speed_interval_ms", 1200L).apply()
+            atualizarSeletorVelocidade()
+            atualizarTela()
+            Toast.makeText(this, "Velocidade Segura selecionada: 1,2s.", Toast.LENGTH_SHORT).show()
+        }
+
+        val lp1 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+            marginEnd = dp(6)
+        }
+
+        val lp2 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+            marginEnd = dp(6)
+        }
+
+        val lp3 = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+
+        linha.addView(btnSpeed09, lp1)
+        linha.addView(btnSpeed10, lp2)
+        linha.addView(btnSpeed12, lp3)
+
+        card.addView(titulo)
+        card.addView(desc)
+        card.addView(linha)
+
+        return card
+    }
+
     private fun criarCardPlanos(): View {
         val card = criarCardBase()
 
@@ -601,9 +674,10 @@ class MainActivity : Activity() {
 9. Volte e abra a tela de acessibilidade.
 10. Ative o serviço do VagaFacil na acessibilidade.
 11. Escolha o modo: 2 dias, 3 dias, 4 dias ou 7 dias.
-12. Ligue a busca automática.
-13. Abra a tela de horários da 99.
-14. Para parar, volte aqui e desligue.
+12. Escolha a velocidade: 0,9s, 1,0s ou 1,2s.
+13. Ligue a busca automática.
+14. Abra a tela de horários da 99.
+15. Para parar, volte aqui e desligue.
             """.trimIndent()
             textSize = 13f
             setTextColor(Color.parseColor("#444444"))
@@ -612,7 +686,7 @@ class MainActivity : Activity() {
         }
 
         val dicaExtra = TextView(this).apply {
-            text = "Dica: em alguns Androids, apps instalados fora da Play Store precisam da permissão de configurações restritas para liberar a acessibilidade."
+            text = "Dica: se o modo Turbo clicar errado ou travar, use 1,0s ou 1,2s."
             textSize = 11f
             setTextColor(Color.parseColor("#777777"))
             setPadding(0, dp(10), 0, 0)
@@ -798,6 +872,7 @@ class MainActivity : Activity() {
         val pagoAtivo = acessoAtivoLocal()
         val basicoLiberado = planoBasicoOuCompletoAtivo()
         val completoLiberado = planoCompletoAtivo()
+        val velocidade = obterVelocidadeMs()
 
         if (dias >= 7 && !completoLiberado) {
             dias = if (basicoLiberado) 4 else 2
@@ -857,7 +932,8 @@ class MainActivity : Activity() {
                 }
             )
             append("\n")
-            append("Intervalo: 1,2 segundos")
+            append("Velocidade: ")
+            append(textoVelocidade(velocidade))
         }
 
         if (::acessoText.isInitialized) {
@@ -966,6 +1042,48 @@ class MainActivity : Activity() {
             aplicarEstiloSeletor(btn3Dias, dias == 3)
             aplicarEstiloSeletor(btn4Dias, dias == 4)
             aplicarEstiloSeletor(btn7Dias, dias == 7)
+        }
+    }
+
+    private fun atualizarSeletorVelocidade() {
+        val velocidade = obterVelocidadeMs()
+
+        if (
+            ::btnSpeed09.isInitialized &&
+            ::btnSpeed10.isInitialized &&
+            ::btnSpeed12.isInitialized
+        ) {
+            aplicarEstiloSeletor(btnSpeed09, velocidade == 900L)
+            aplicarEstiloSeletor(btnSpeed10, velocidade == 1000L)
+            aplicarEstiloSeletor(btnSpeed12, velocidade == 1200L)
+        }
+    }
+
+    private fun obterVelocidadeMs(): Long {
+        val valor = try {
+            prefs.getLong("speed_interval_ms", 1200L)
+        } catch (_: ClassCastException) {
+            try {
+                prefs.getInt("speed_interval_ms", 1200).toLong()
+            } catch (_: Exception) {
+                1200L
+            }
+        } catch (_: Exception) {
+            1200L
+        }
+
+        return when {
+            valor <= 900L -> 900L
+            valor <= 1000L -> 1000L
+            else -> 1200L
+        }
+    }
+
+    private fun textoVelocidade(ms: Long): String {
+        return when (ms) {
+            900L -> "0,9 segundos — Turbo"
+            1000L -> "1,0 segundo — Rápido"
+            else -> "1,2 segundos — Seguro"
         }
     }
 
