@@ -50,9 +50,6 @@ class AutoClickService : AccessibilityService() {
     private val maxTextosPorTela = 250
     private val maxCandidatosPorTela = 40
 
-    // Velocidade atualizada para 1,2 segundos.
-    private val intervaloLoopMs = 1200L
-
     // Anti-travamento mantido.
     private val screenshotTimeoutMs = 8000L
     private val watchdogIntervalMs = 5000L
@@ -165,7 +162,7 @@ class AutoClickService : AccessibilityService() {
             screenshotEmAndamento = false
 
             if (roboLigado()) {
-                agendarProximoCiclo(intervaloLoopMs)
+                agendarProximoCiclo(obterIntervaloLoopMs())
             } else {
                 loopAtivo = false
             }
@@ -188,7 +185,7 @@ class AutoClickService : AccessibilityService() {
             if (agora - ultimoInicioScreenshot > screenshotTimeoutMs) {
                 screenshotEmAndamento = false
             } else {
-                agendarProximoCiclo(300)
+                agendarProximoCiclo(obterIntervaloEsperaScreenshotMs())
                 return
             }
         }
@@ -209,10 +206,10 @@ class AutoClickService : AccessibilityService() {
                     // Ignora erro no clique de data para não derrubar o serviço.
                 }
 
-                agendarProximoCiclo(intervaloLoopMs)
+                agendarProximoCiclo(obterIntervaloLoopMs())
             }
         } else {
-            agendarProximoCiclo(intervaloLoopMs)
+            agendarProximoCiclo(obterIntervaloLoopMs())
         }
     }
 
@@ -230,6 +227,56 @@ class AutoClickService : AccessibilityService() {
         } catch (_: Exception) {
             loopAtivo = false
             screenshotEmAndamento = false
+        }
+    }
+
+    private fun obterIntervaloLoopMs(): Long {
+        return normalizarVelocidade(obterVelocidadeSalva())
+    }
+
+    private fun obterIntervaloEsperaScreenshotMs(): Long {
+        return when (obterIntervaloLoopMs()) {
+            900L -> 220L
+            1000L -> 250L
+            else -> 300L
+        }
+    }
+
+    private fun obterIntervaloCliqueDataMs(): Long {
+        return when (obterIntervaloLoopMs()) {
+            900L -> 650L
+            1000L -> 700L
+            else -> 800L
+        }
+    }
+
+    private fun obterIntervaloEntreCliquesMultiplosMs(): Long {
+        return when (obterIntervaloLoopMs()) {
+            900L -> 220L
+            1000L -> 250L
+            else -> 300L
+        }
+    }
+
+    private fun obterVelocidadeSalva(): Long {
+        return try {
+            prefs.getLong("speed_interval_ms", 1200L)
+        } catch (_: ClassCastException) {
+            try {
+                prefs.getInt("speed_interval_ms", 1200).toLong()
+            } catch (_: Exception) {
+                1200L
+            }
+        } catch (_: Exception) {
+            1200L
+        }
+    }
+
+    private fun normalizarVelocidade(valor: Long): Long {
+        return when {
+            valor <= 900L -> 900L
+            valor <= 1000L -> 1000L
+            else -> 1200L
         }
     }
 
@@ -378,7 +425,7 @@ class AutoClickService : AccessibilityService() {
             try {
                 finalizar(clicou)
             } catch (_: Exception) {
-                agendarProximoCiclo(intervaloLoopMs)
+                agendarProximoCiclo(obterIntervaloLoopMs())
             }
         }
 
@@ -697,7 +744,7 @@ class AutoClickService : AccessibilityService() {
                 }
             }, delay)
 
-            delay += 300L
+            delay += obterIntervaloEntreCliquesMultiplosMs()
         }
     }
 
@@ -738,7 +785,7 @@ class AutoClickService : AccessibilityService() {
     private fun clicarProximaData() {
         val agora = System.currentTimeMillis()
 
-        if (agora - ultimoCliqueData < 800) return
+        if (agora - ultimoCliqueData < obterIntervaloCliqueDataMs()) return
 
         ultimoCliqueData = agora
 
